@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\odbal;
+namespace rastatech\odbal;
 /**
  * Abstraction of the Oracle statement parsing process / statement resource and related functionality for better maintainability/readability
  * 

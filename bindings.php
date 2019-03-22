@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\odbal;
+namespace rastatech\odbal;
 /**
 * Abstraction of the Oracle variable binding process and related functionality for better maintainability/readability
 * 

@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\odbal;
+namespace rastatech\odbal;
 /**
  *
  * Simplified Oracle database driver specifically for NMED purposes.

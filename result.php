@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\odbal;
+namespace rastatech\odbal;
 /**
 * Abstraction of the OCI functions dealing with fetching the result array.
 * Also provides a public row_count variable for determining the size of the result set
