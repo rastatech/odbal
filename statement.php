@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\dbal;
+namespace \rastatech\odbal;
 /**
  * Abstraction of the Oracle statement parsing process / statement resource and related functionality for better maintainability/readability
  * 
@@ -59,10 +59,10 @@ class statement
     
     /**
     * creates the Oracle statement object; 
-    * factored out to make the \dbal\main smaller
+    * factored out to make the \odbal\main smaller
     * 
     * @param Slim/Container $ci The slim Dependency Injection Container
-    * @param string $model_sql_elements   the specific configs from the Model that extends \dbal\main
+    * @param string $model_sql_elements   the specific configs from the Model that extends \odbal\main
     * @throws \Exception
     */
     public function __construct($ci, $model_sql_elements)

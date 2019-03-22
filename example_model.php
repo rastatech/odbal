@@ -8,7 +8,7 @@ namespace models;
  * @subpackage models 
  * @author todd.hochman
  */
-class urlshortr extends \dbal\main
+class urlshortr extends \odbal\main
 {
     /**
      *

@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\dbal;
+namespace \rastatech\odbal;
 /**
  * Abstraction of the Oracle connection process / resource and related functionality for better maintainability/readability
  * 
@@ -65,7 +65,7 @@ class connection
     /**
     * creates the oracle connection object; 
     * 
-    * refactored out of \dbal\main to make that class less enormous
+    * refactored out of \odbal\main to make that class less enormous
     * 
     * @param Container $ci The Dependency Injection Container
     * @param mixed-array    $model_sql_elements   the array of configuration items

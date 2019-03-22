@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\dbal;
+namespace \rastatech\odbal;
 /*
  * @package cwsrf
  * @subpackage dbal

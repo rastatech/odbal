@@ -1,5 +1,5 @@
 <?php
-namespace \rastatech\dbal;
+namespace \rastatech\odbal;
 /**
  *
  * Simplified Oracle database driver specifically for NMED purposes.
@@ -282,7 +282,7 @@ class main
     /**
      * Magic __call function to handle abstracted object access
      * 
-     * Use this function to give \dbal\main (and objects that extend it) access to dependent objects, e.g. the connection, statement or bindings objects 
+     * Use this function to give \odbal\main (and objects that extend it) access to dependent objects, e.g. the connection, statement or bindings objects 
      * the *_sql_elements* attribute comes from the models that extend this class
      * 
      * @param string $name  the faux method call 
