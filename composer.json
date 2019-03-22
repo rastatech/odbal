@@ -1,0 +1,10 @@
+{
+	"name":"rastatech/odbal",
+	"type":"library",
+	"description":"Oracle Database Abstraction Layer",
+	"keywords":["oracle","database","abstraction","layer","DB","Oracle","stored procedure"],
+	"license":"MIT",
+	"authors":[
+		{"name":"Rastatech"}	
+	]
+}
