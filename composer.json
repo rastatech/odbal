@@ -6,5 +6,16 @@
 	"license":"MIT",
 	"authors":[
 		{"name":"Rastatech"}	
+	],
+	"autoload": {
+        "psr-0" : {
+            "rastatech\\odbal" : ""
+        }
+    },
+	"repositories": [
+	    {
+	        "type": "vcs",
+	        "url": "https://github.com/rastatech/odbal"
+	    }
 	]
 }
