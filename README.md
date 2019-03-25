@@ -2,7 +2,7 @@
 Oracle Database Abstraction Layer
 
 implement the normal way:
-  composer require rastatech/odbal
+  `composer require rastatech/odbal`
 
 This is an abstraction layer intended to take some of the pain & suffering out of using Oracle in PHP, especially Oracle Stored Procedures, for which this DBAL is specifically geared (should work for Pass-Thru SQL too but I've not tested that in a while)
 
