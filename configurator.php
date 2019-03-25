@@ -24,7 +24,7 @@ trait configurator
     */
     protected function _get_configs($model_sql_elements)
     {
-        $relevantConfigSet = substr(__CLASS__, 5);//use the host class name to get the config set to use
+        $relevantConfigSet = substr(__CLASS__, strrpos(__CLASS__, '\\') + 1);//use the host class name to get the config set to use
         if(array_key_exists($relevantConfigSet, $this->ci['dbconfigs'])){
             $relevantConfigs = $this->ci['dbconfigs'][$relevantConfigSet];  
             $configs2assign = $this->_mergeConfigs($relevantConfigs, $model_sql_elements);
