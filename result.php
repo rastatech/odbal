@@ -79,7 +79,7 @@ class result
         if(is_array($resource2fetch)){
             $result = [];
             foreach($resource2fetch as $cursorKey => $cursorObj){
-                $success[$cursorKey] = oci_fetch_all($cursorObj, $result[], $this->_fetch_all_params['skip'], $this->_fetch_all_params['maxrows'], $this->_fetch_all_params['flags']);
+                $success[$cursorKey] = oci_fetch_all($cursorObj, $result[$cursorKey], $this->_fetch_all_params['skip'], $this->_fetch_all_params['maxrows'], $this->_fetch_all_params['flags']);
             }
             $this->row_count = count($success);
         }
