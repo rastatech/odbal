@@ -49,10 +49,9 @@ class modelbase extends \rastatech\odbal\main implements model_interface
      * input cleansing for parameters
      * 
      * @param array $input_parameter_array
-     * @param array $model
      * @return mixed-array  the SQL element Bind Vars
      */
-    protected function _validatePayload(array $input_parameter_array, array $model = [])
+    protected function _validatePayload(array $input_parameter_array)
     {
         $config = \HTMLPurifier_Config::createDefault();
         $this->_html_purifier = new \HTMLPurifier($config);
