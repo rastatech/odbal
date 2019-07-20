@@ -154,19 +154,36 @@ class statement
     {
         if(( ! $outcursor_obj) OR (($outcursor_obj->out_cursor) AND ( ! is_array($outcursor_obj->out_cursor)))){
             $executeOn = ( ! $outcursor_obj) ? $this->stmt : $outcursor_obj->out_cursor;
-            $success = oci_execute($executeOn);
+            $success = $this->_safe_execute($executeOn);
         }
         elseif(is_array($outcursor_obj->out_cursor)){
             foreach($outcursor_obj->out_cursor as $outcursorname => $outcursor){
-                $success[] = oci_execute($outcursor);
+                $success[] = $this->_safe_execute($outcursor);
             }
         }
         if(( ! isset($success)) OR ( ! $success) OR ((is_array($success)) AND (in_array(FALSE, $success)))){
             $exception = oci_error($this->stmt);
-            throw new \Exception('oci execute failed! Oracle Error:{' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}', 513);
+            throw new \Exception('oci execute failed without exception! Oracle Error:{' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}', 513);
         }
         return $this;
-    }    
+    }
+
+    /**
+     * @param Statement $executeOn the Oracle Statement / Cursor to execute upon
+     * @return bool the result of the execution
+     * @throws \Exception on OCI error
+     */
+    protected function _safe_execute($executeOn)
+    {
+        try {
+            $success = oci_execute($executeOn);
+        }
+        catch (exception $e) {
+            $e = oci_error($this->stmt);
+            throw new \Exception('oci execute failed! Oracle Error:{' . htmlentities($e['code']) . ': ' . htmlentities($e['message']) . '}', 513);
+        }
+        return $success;
+    }
     
     /**
     * Frees resources after use
