@@ -163,12 +163,15 @@ class statement
         }
         if(( ! isset($success)) OR ( ! $success) OR ((is_array($success)) AND (in_array(FALSE, $success)))){
             $exception = oci_error($this->stmt);
-            throw new \Exception('oci execute failed without exception! Oracle Error:{' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}', 513);
+            $message = 'oci_execute failed! Oracle Error:{' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}';
+            throw new \Exception($message, 513);
         }
         return $this;
     }
 
     /**
+     * offloaded the oci_execute to its own function so we can try/catch
+     *
      * @param Statement $executeOn the Oracle Statement / Cursor to execute upon
      * @return bool the result of the execution
      * @throws \Exception on OCI error
