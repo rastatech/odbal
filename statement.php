@@ -169,6 +169,8 @@ class statement
     }
 
     /**
+     * offloaded the oci_execute to its own function so we can try/catch
+     * 
      * @param Statement $executeOn the Oracle Statement / Cursor to execute upon
      * @return bool the result of the execution
      * @throws \Exception on OCI error
