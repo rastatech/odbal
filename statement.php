@@ -96,8 +96,6 @@ class statement
 //        }
 //        
         $this->stmt = oci_parse($conn, $this->sql);
-//        echo 'made it past parse!<br/>';
-//        die(var_dump($this->stmt));
         if( ! $this->stmt)
         {
             $exception = oci_error($conn);
