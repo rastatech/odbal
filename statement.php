@@ -2,7 +2,7 @@
 namespace rastatech\odbal;
 /**
  * Abstraction of the Oracle statement parsing process / statement resource and related functionality for better maintainability/readability
- * 
+ *
  * @package URL_ShortR
  * @subpackage dbal
  * @author todd.hochman
@@ -10,61 +10,61 @@ namespace rastatech\odbal;
  * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those
  */
 class statement
-{    
+{
     /**
-    *
-    * @var Container_object    the Dependency Injection Container  
-    */
+     *
+     * @var Container_object    the Dependency Injection Container
+     */
     protected $ci;
-    
+
     /**
-    *
-    * @var Resource the parsed statement
-    */
-    public $stmt;  
-    
+     *
+     * @var Resource the parsed statement
+     */
+    public $stmt;
+
     /**
-    *
-    * @var string the SQL to execute 
-    */
+     *
+     * @var string the SQL to execute
+     */
     public $sql = '';
-    
+
     /**
-    *
-    * @var string-array array of regexes for determining the type of sql statement to process differentially
-    * currently ONLY the following types of SQL statement are supported:
-    * -packaged procedure or function call; fully qualified package name only
-    * -packaged procedure or function call; verbose (complete) package call
-    * -SELECT pass-thru query
-    * -DELETE pass-thru query
-    * -UPDATE pass-thru query
-    * -INSERT pass-thru query
-    * @see $_sqlType
-    * @see config/database.php
-    */
-    private $__sqltypes;    
-    
+     *
+     * @var string-array array of regexes for determining the type of sql statement to process differentially
+     * currently ONLY the following types of SQL statement are supported:
+     * -packaged procedure or function call; fully qualified package name only
+     * -packaged procedure or function call; verbose (complete) package call
+     * -SELECT pass-thru query
+     * -DELETE pass-thru query
+     * -UPDATE pass-thru query
+     * -INSERT pass-thru query
+     * @see $_sqlType
+     * @see config/database.php
+     */
+    private $__sqltypes;
+
     /**
-    *
-    * @var integer the type of sql we are going to execute
-    * can be one of three types:
-    * -0 the fully qualified name of the package; we can build the rest of it in this class
-    * -1 a functional complete package call
-    * -2 a standard CRUD call via pass-thru SQL
-    * @see $__sqltypes
-    */
-    protected $_sqlType;    
-    
+     *
+     * @var integer the type of sql we are going to execute
+     * can be one of three types:
+     * -0 the fully qualified name of the package; we can build the rest of it in this class
+     * -1 a functional complete package call
+     * -2 a standard CRUD call via pass-thru SQL
+     * @see $__sqltypes
+     */
+    protected $_sqlType;
+
     use configurator;
-    
+
     /**
-    * creates the Oracle statement object; 
-    * factored out to make the \odbal\main smaller
-    * 
-    * @param Slim/Container $ci The slim Dependency Injection Container
-    * @param string $model_sql_elements   the specific configs from the Model that extends \odbal\main
-    * @throws \Exception
-    */
+     * creates the Oracle statement object;
+     * factored out to make the \odbal\main smaller
+     *
+     * @param Slim/Container $ci The slim Dependency Injection Container
+     * @param string $model_sql_elements   the specific configs from the Model that extends \odbal\main
+     * @throws \Exception
+     */
     public function __construct($ci, $model_sql_elements)
     {
         $this->ci = $ci;
@@ -73,13 +73,13 @@ class statement
     }
 
     /**
-    * parse the sql statement for Oracle's purposes
-    * 
-    * @return Oracle the oracle object for chaining operations
-    * @param Oracle_Connection_Resourece $conn the oracle connection to use
-    */
+     * parse the sql statement for Oracle's purposes
+     *
+     * @return Oracle the oracle object for chaining operations
+     * @param Oracle_Connection_Resourece $conn the oracle connection to use
+     */
     public function parse_statement($conn)
-    {        
+    {
 ////                $conn = oci_connect('URL_SHORTS_USER', 'dfwmnewd', '(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=oradbdev.nmenv.state.nm.us)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=xeidd.nmenv.state.nm.us)))');
 //
 //        echo get_resource_type($conn);
@@ -102,32 +102,32 @@ class statement
             throw new \Exception('oci parse failed! {' . htmlentities($exception->getCode()) . ': ' . htmlentities($exception->getMessage()) . '}');
         }
         return $this;
-    }    
-    
+    }
+
     /**
-    * Gets the type of SQL we're prcoessing
-    * 
-    * @return string
-    */
+     * Gets the type of SQL we're prcoessing
+     *
+     * @return string
+     */
     public function get_sqlType()
     {
         if( ! $this->_sqlType){
             return $this->_match_sqlType();
         }
         return $this->_sqlType;
-    }    
-    
+    }
+
     /**
-    * figures out the type of SQL we have so we can process accordingly
-    * choices are:
-    * #a valid package invocation string
-    * #a valid pass-thru SQL statement
-    * 
-    * There was a 3rd type @ one point but that is no longer supported
-    * 
-    * @return string the type of SQL to process
-    * @throws \Exception if we can't figure out the type of sql this is
-    */
+     * figures out the type of SQL we have so we can process accordingly
+     * choices are:
+     * #a valid package invocation string
+     * #a valid pass-thru SQL statement
+     *
+     * There was a 3rd type @ one point but that is no longer supported
+     *
+     * @return string the type of SQL to process
+     * @throws \Exception if we can't figure out the type of sql this is
+     */
     protected function _match_sqlType()
     {
         if(is_array($this->__sqltypes)){
@@ -141,15 +141,15 @@ class statement
             }
         }
         throw new \Exception('Unable to match SQL type! Cannot process SQL string: <br/>' . $this->sql, 519);
-    }    
-    
+    }
+
     /**
-    * execute the passed statement
-    * 
-    * @param	resource 	$outcursor_obj	the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
-    * @throws \Exception	exception on failure
-    * @return Oracle the oracle object for chaining operations
-    */
+     * execute the passed statement
+     *
+     * @param	resource 	$outcursor_obj	the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
+     * @throws \Exception	exception on failure
+     * @return Oracle the oracle object for chaining operations
+     */
     public function execute_statement($outcursor_obj = FALSE)
     {
         if(( ! $outcursor_obj) OR (($outcursor_obj->out_cursor) AND ( ! is_array($outcursor_obj->out_cursor)))){
@@ -163,8 +163,13 @@ class statement
         }
         if(( ! isset($success)) OR ( ! $success) OR ((is_array($success)) AND (in_array(FALSE, $success)))){
             $exception = oci_error($this->stmt);
-            $message = 'oci_execute failed! Oracle Error was: code: ' . htmlentities($exception['code']) . '; message: ' . htmlentities($exception['message']) . '}';
-            throw new \Exception($message, 513);
+//            $message = trim(htmlentities($exception['message']));
+            $message = 'Oracle Error:{' . htmlentities($exception['code']) . '};;';
+            $message = preg_replace('~[[:cntrl:]]~', '', $message);
+            $this->ci['errorMessage'] = $message;
+            $this->ci['errorCode'] = htmlentities($exception['code']);
+//            throw new \Exception('oci_execute failed! Oracle Error:{' . htmlentities($exception['code']) . ': ' . $message . '}', 513);
+            throw new \Exception('oci_execute failed!', 513);
         }
         return $this;
     }
@@ -183,22 +188,26 @@ class statement
         }
         catch (exception $e) {
             $e = oci_error($this->stmt);
-            throw new \Exception('oci execute failed! Oracle Error:{' . htmlentities($e['code']) . ': ' . htmlentities($e['message']) . '}', 513);
+            $message = 'Oracle Error:{' . htmlentities($e->getCode()) . '};;';
+            $message = preg_replace('~[[:cntrl:]]~', '', $e->getMessage());
+            $this->ci['errorMessage'] = $message;
+            $this->ci['errorCode'] = htmlentities($exception['code']);
+            throw new \Exception('oci execute failed!', 513, $e);
         }
         return $success;
     }
-    
+
     /**
-    * Frees resources after use
-    *
-    * @throws \Exception if oci_free_statement fails
-    * @return Oracle the oracle object for chaining operations
-    */
+     * Frees resources after use
+     *
+     * @throws \Exception if oci_free_statement fails
+     * @return Oracle the oracle object for chaining operations
+     */
     public function clean_up_after()
     {
         if($this->stmt){
-                $success = oci_free_statement($this->stmt);
-                $success AND ($this->stmt = NULL);
+            $success = oci_free_statement($this->stmt);
+            $success AND ($this->stmt = NULL);
         }
         if((isset($success)) AND ( ! $success)){
             $err = oci_error($this->stmt);
@@ -206,5 +215,5 @@ class statement
             throw new \Exception($msg);
         }
         return $this;
-    }    
+    }
 }
