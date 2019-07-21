@@ -163,7 +163,7 @@ class statement
         }
         if(( ! isset($success)) OR ( ! $success) OR ((is_array($success)) AND (in_array(FALSE, $success)))){
             $exception = oci_error($this->stmt);
-            $message = 'oci_execute failed! Oracle Error:{' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}';
+            $message = 'oci_execute failed! Oracle Error was: code: ' . htmlentities($exception['code']) . '; message: ' . htmlentities($exception['message']) . '}';
             throw new \Exception($message, 513);
         }
         return $this;
