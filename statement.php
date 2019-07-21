@@ -1,5 +1,7 @@
 <?php
 namespace rastatech\odbal;
+use Exception;
+
 /**
  * Abstraction of the Oracle statement parsing process / statement resource and related functionality for better maintainability/readability
  *
@@ -63,7 +65,7 @@ class statement
      *
      * @param Slim/Container $ci The slim Dependency Injection Container
      * @param string $model_sql_elements   the specific configs from the Model that extends \odbal\main
-     * @throws \Exception
+     * @throws Exception
      */
     public function __construct($ci, $model_sql_elements)
     {
@@ -99,7 +101,7 @@ class statement
         if( ! $this->stmt)
         {
             $exception = oci_error($conn);
-            throw new \Exception('oci parse failed! {' . htmlentities($exception->getCode()) . ': ' . htmlentities($exception->getMessage()) . '}');
+            throw new Exception('oci parse failed! {' . htmlentities($exception->getCode()) . ': ' . htmlentities($exception->getMessage()) . '}');
         }
         return $this;
     }
@@ -126,7 +128,7 @@ class statement
      * There was a 3rd type @ one point but that is no longer supported
      *
      * @return string the type of SQL to process
-     * @throws \Exception if we can't figure out the type of sql this is
+     * @throws Exception if we can't figure out the type of sql this is
      */
     protected function _match_sqlType()
     {
@@ -140,14 +142,14 @@ class statement
                 }
             }
         }
-        throw new \Exception('Unable to match SQL type! Cannot process SQL string: <br/>' . $this->sql, 519);
+        throw new Exception('Unable to match SQL type! Cannot process SQL string: <br/>' . $this->sql, 519);
     }
 
     /**
      * execute the passed statement
      *
      * @param	resource 	$outcursor_obj	the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
-     * @throws \Exception	exception on failure
+     * @throws Exception	exception on failure
      * @return Oracle the oracle object for chaining operations
      */
     public function execute_statement($outcursor_obj = FALSE)
@@ -169,7 +171,7 @@ class statement
             $this->ci['errorMessage'] = $message;
             $this->ci['errorCode'] = htmlentities($exception['code']);
 //            throw new \Exception('oci_execute failed! Oracle Error:{' . htmlentities($exception['code']) . ': ' . $message . '}', 513);
-            throw new \Exception('oci_execute failed!', 513);
+            throw new Exception('oci_execute failed!', 513);
         }
         return $this;
     }
@@ -179,7 +181,7 @@ class statement
      *
      * @param Statement $executeOn the Oracle Statement / Cursor to execute upon
      * @return bool the result of the execution
-     * @throws \Exception on OCI error
+     * @throws Exception on OCI error
      */
     protected function _safe_execute($executeOn)
     {
@@ -191,8 +193,8 @@ class statement
             $message = 'Oracle Error:{' . htmlentities($e->getCode()) . '};;';
             $message = preg_replace('~[[:cntrl:]]~', '', $e->getMessage());
             $this->ci['errorMessage'] = $message;
-            $this->ci['errorCode'] = htmlentities($exception['code']);
-            throw new \Exception('oci execute failed!', 513, $e);
+            $this->ci['errorCode'] = htmlentities($e['code']);
+            throw new Exception('oci execute failed!', 513, $e);
         }
         return $success;
     }
@@ -200,7 +202,7 @@ class statement
     /**
      * Frees resources after use
      *
-     * @throws \Exception if oci_free_statement fails
+     * @throws Exception if oci_free_statement fails
      * @return Oracle the oracle object for chaining operations
      */
     public function clean_up_after()
@@ -212,7 +214,7 @@ class statement
         if((isset($success)) AND ( ! $success)){
             $err = oci_error($this->stmt);
             $msg = 'oci close failed! Oracle Error:{' . htmlentities($err['code']) . ': ' . htmlentities($err['message'] . '}', 526);
-            throw new \Exception($msg);
+            throw new Exception($msg);
         }
         return $this;
     }
