@@ -1,5 +1,7 @@
 <?php
 namespace rastatech\odbal;
+use Exception;
+
 /**
 * Abstraction of the OCI functions dealing with fetching the result array.
 * Also provides a public row_count variable for determining the size of the result set
@@ -91,7 +93,10 @@ class result
             $failedKey = (is_array($success)) ? array_search(FALSE, $success, TRUE) : FALSE;
             $erroredResource = ( ! $failedKey) ? $resource2fetch : $resource2fetch[$failedKey];
             $exception = oci_error($erroredResource);
-            throw new \Exception('oci fetch all failed! {' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}', 527);
+            $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));
+            $this->ci['errorMessage'] = $message;
+            $this->ci['errorCode'] = htmlentities($exception['code']);
+            throw new Exception('oci fetch all failed!', 527);
         }
         return $result;
     }

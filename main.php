@@ -1,5 +1,7 @@
 <?php
 namespace rastatech\odbal;
+use Exception;
+
 /**
  *
  * Simplified Oracle database driver specifically for NMED purposes.
@@ -104,7 +106,7 @@ class main
      * @param mixed-array $payload    the array of key/value pairs that comprises the PUT or POST payload
      * @param mixed-array $model      the array of key/value pairs for the PUT or POST that are defined in the model
      * @return boolean  TRUE if the two arrays properly match
-     * @throws \Exception    if they don't match
+     * @throws Exception    if they don't match
      */
     protected function _validatePayload(array $payload, array $model){
         $payload_keys = array_keys($payload);
@@ -117,7 +119,9 @@ class main
         $diffs = array_diff($model_keys_noOutvar, $payload_keys);
         if( ! empty($diffs)){
             if(count($diffs) == count($model_keys)){//if they are totally different
-                throw new \Exception('payload differs from model! Cannot process data. Differences were: <br/>{{' . var_export($diffs, TRUE) . '}}<br/>', 514);
+                $this->ci['errorMessage'] = 'payload differs from model! Cannot process data. Differences were: <br/>{{' . var_export($diffs, TRUE) . '}}<br/>';
+                $this->ci['errorCode'] = 514;
+                throw new Exception('payload differs from model', 514);
             }        
         }
         return $this->_cleanVars($model_keys, $payload);
@@ -342,7 +346,7 @@ class main
                 $return = (( ! $cleanStatement) OR ( ! $cleanConnection)) ? FALSE : TRUE;
                 break;
             default:
-                throw new \Exception("the $name function is not supported");
+                throw new Exception("the $name function is not supported");
         }
         return $return;
     }

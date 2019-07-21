@@ -1,5 +1,7 @@
 <?php
 namespace rastatech\odbal;
+use Exception;
+
 /**
  * Abstraction of the Oracle cursor creation process / resource and related functionality for better maintainability/readability
  * 
@@ -76,7 +78,10 @@ class cursor
         } 
         if(( ! isset($success)) OR ( ! $success) OR ((is_array($success)) AND (in_array(FALSE, $success)))){
             $exception = oci_error($stmt);
-            throw new \Exception('OUT CURSOR binding failed! {' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}');
+            $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));
+            $this->ci['errorMessage'] = $message;
+            $this->ci['errorCode'] = htmlentities($exception['code']);
+            throw new Exception('OUT CURSOR binding failed!',528);
         }
         return $this;
     }    
@@ -98,7 +103,10 @@ class cursor
         }        
         if(( ! $this->out_cursor) OR (empty($this->out_cursor))){
             $exception = oci_error($conn);
-            throw new \Exception('OUT CURSOR creation failed! : {' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}');
+            $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));
+            $this->ci['errorMessage'] = $message;
+            $this->ci['errorCode'] = htmlentities($exception['code']);
+            throw new Exception('OUT CURSOR creation failed!',529);
         }
         return $this;
     }      

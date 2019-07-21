@@ -1,5 +1,7 @@
 <?php
 namespace rastatech\odbal;
+use Exception;
+
 /**
 * Abstraction of the Oracle variable binding process and related functionality for better maintainability/readability
 * 
@@ -91,12 +93,12 @@ class bindings
     * @param OCI Resource $stmt    the parsed statement resource
     * @param integer $sqlType   the type of SQL statement being bound
     * @return integer|integer-array the array of boolean return values for the binding operation(s); 
-    * @throws \Exception if no variables were available for binding
+    * @throws Exception if no variables were available for binding
     */
     protected function _bindVars2SQL($stmt, $sqlType)
     {
         if( ! $stmt){
-            throw new \Exception('no statement found to bind on!', 521);
+            throw new Exception('no statement found to bind on!', 517);
         }
         if($this->vars2bind){
             $b = ($sqlType < 2) ? $this->_bind_pkg($stmt) : $this->bind_passThruSQL($stmt);
@@ -114,7 +116,7 @@ class bindings
     * 
     * @param OCI_statement_resource $stmt   the Oracle parsed statement resource handle
     * @return boolean-array the array of binding results
-    * @throws \Exception failure to bind variables will throw an exception
+    * @throws Exception failure to bind variables will throw an exception
     */
     protected function _bind_pkg($stmt)
     {
@@ -129,9 +131,12 @@ class bindings
             $b[$bind_var]= $this->_bind_pkg_arrayedParams($stmt, $bind_var, $bind_var, $bind_value); //TEST USING: $b[$bind_var] =  oci_bind_by_name($stmt, $bind_var, $bind_value);
             if( ! $b[$bind_var]){
                 $err = oci_error($stmt);
-                $errMsg = 'bind by name failed! Variable' . $bind_var . '; error message: ' . $err['message'] . '; error code: ' .$err['code'];
-                $errMsg .= '; statement to bind was: {' . $this->sql . '} placeholder to bind: {:' . $bind_var . '}; value to bind: {' . $bind_value . '}';
-                throw new \Exception($errMsg, 522);
+                $errMsg = 'bind by name failed! Variable' . $bind_var . '; error message: ' . htmlentities($err['message']) . '; statement to bind was: {' .
+                    $this->sql . '} placeholder to bind: {:' . $bind_var . '}; value to bind: {' . $bind_value . '}';
+                $message = preg_replace('~[[:cntrl:]]~', '', $errMsg);
+                $this->ci['errorMessage'] = $message;
+                $this->ci['errorCode'] = htmlentities($err['code']);
+                throw new Exception('Oracle bind by name failed!', 522);
             }
         }
         return $b;
@@ -145,7 +150,8 @@ class bindings
     */
     protected function bind_passThruSQL($stmt)
     {
-        throw new \Exception('pass-thru SQL not currently supported in this version of NMED Oracle DBAL; Please make a PL/SQL stored procedure instead.', 525);
+        $errMsg = 'pass-thru SQL not currently supported in this version of NMED Oracle DBAL; Please make a PL/SQL stored procedure instead.';
+        throw new Exception($errMsg, 520);
     }  
         
     /**
@@ -185,14 +191,12 @@ class bindings
         }
         elseif((is_null($length)) AND (is_null($type))){
             $b[$bind_var] = oci_bind_by_name($stmt, $placeholder[$bind_var], $this->$bind_var);
-//             if(strpos($bind_var, '_date_')){
-//                echo 'binding using default length and type!<br/>';
-//             }
             if($o_err = oci_error($stmt)){
-                $err = $o_err['code'] . '; ' . $o_err['message'] . ';<br/>';
-                $err .= $bind_var. ': ' . $placeholder[$bind_var] . '<br/>';
-                $err .= 'SQL was: ' . $o_err['sqltext'] . '<br/>';
-                throw new \Exception($err, 524);
+                $err = $o_err['message'] . ';<br/>' . $bind_var. ': ' . $placeholder[$bind_var] . '<br/>' . 'SQL was: ' . $o_err['sqltext'] . '<br/>';
+                $message = preg_replace('~[[:cntrl:]]~', '', $err);
+                $this->ci['errorMessage'] = $message;
+                $this->ci['errorCode'] = htmlentities($o_err['code']);
+                throw new Exception('Oracle bind by name failed (array)!', 522);
             }
         }
         else{
@@ -208,7 +212,7 @@ class bindings
     *
     * @param mixed|mixed-array $bind_value	the simple or complex bind value
     * @param string $key	a particular key to retrieve from the complex bind value or defaults
-    * @throws \Exception
+    * @throws Exception
     * @return mixed either the maxlength, the type, or the value to bind
     * @uses show_error()
     * @uses __parse_bindVar_length()
@@ -227,11 +231,13 @@ class bindings
             case $parseKeys[2]:
                 $return = ((is_array($bind_value)) AND (array_key_exists($key, $bind_value))) ? $bind_value[$key] : (( ! is_array($bind_value)) ? $bind_value : FALSE);
                 if($return === FALSE){
-                    throw new \Exception('No actual value found to bind to in compound bind value!', 523);
+                    throw new Exception('No actual value found to bind to in compound bind value!', 523);
                 }
                 break;
             default:
-                throw new \Exception('bound value parsing call is messed up - encountered a malformed compound bind value!', 524);
+                $this->ci['errorMessage'] = 'bound value parsing call is messed up - encountered a malformed compound bind value!';
+                $this->ci['errorCode'] = 524;
+                throw new Exception('malformed compound bind value!', 524);
         }
         return $return;
     }    
@@ -344,7 +350,7 @@ class bindings
     private function __parse_varLength($bind_value, $asArray = FALSE)
     {
         if( ! $bind_value){
-            throw new \Exception('unable to determine table length for oci_bind_array_by_name');  
+            throw new Exception('unable to determine table length for oci_bind_array_by_name');
         }
         if($asArray){
             $length[0] = count($bind_value);

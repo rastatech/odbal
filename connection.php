@@ -1,5 +1,7 @@
 <?php
 namespace rastatech\odbal;
+use Exception;
+
 /**
  * Abstraction of the Oracle connection process / resource and related functionality for better maintainability/readability
  * 
@@ -108,9 +110,12 @@ class connection
             }
             if( ! $this->conn){
                 $exception = oci_error();
-                $msg = 'Cannot connect - check credentials and connection string? {' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}';
+                $msg = 'Cannot connect - check credentials and connection string? {' . htmlentities($exception['message']) . '}';
                 $msg .= '; connection string used was: ' . $this->_cnx_str;
-                throw new \Exception($msg, 516);
+                $message = preg_replace('~[[:cntrl:]]~', '', $msg);
+                $this->ci['errorMessage'] = $message;
+                $this->ci['errorCode'] = htmlentities($exception['code']);
+                throw new Exception('Oracle connection failed!',516);
             }
         }
         return $this->conn; 
@@ -121,14 +126,16 @@ class connection
      * 
     * @param string $cnxStr the connection string
     * @return boolean
-    * @throws \Exception
+    * @throws Exception
     */
     protected function _validateConnection($cnxStr)
     {
         $cnxString = [];
         if( ! preg_match($this->_cnx_regex, $cnxStr, $cnxString)){
             $msg = 'connection string not valid!<br/> Regex: ' . $this->_cnx_regex . '<br/>connection string =' . $cnxStr;
-            throw new \Exception($msg, 515);
+            $this->ci['errorMessage'] = $msg;
+            $this->ci['errorCode'] = 515;
+            throw new Exception('Connection string not valid', 515);
         }
         if($this->_cnx_str != $cnxString[0]){
             $this->_cnx_str = $cnxString[0]; //only want the connection string part;
@@ -139,7 +146,7 @@ class connection
     /**
     * actually commit to the database via oci_commit;
     *
-    * @throws \Exception	on commit fail
+    * @throws Exception	on commit fail
     * @return dbal_connection the connection object for chaining operations
     */
     public function commit()
@@ -147,7 +154,10 @@ class connection
         $success = oci_commit($this->conn);
         if( ! $success){
                 $err = oci_error($this->conn);
-                throw new \Exception('oci commit failed! {' . htmlentities($exception['code']) . ': ' . htmlentities($exception['message']) . '}', 525);
+                $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($err['message']));
+                $this->ci['errorMessage'] = $message;
+                $this->ci['errorCode'] = htmlentities($err['code']);
+                throw new Exception('oci commit failed!', 524);
         }
         return $this;
     }
@@ -155,7 +165,7 @@ class connection
     /**
     * Frees resources after use
     *
-    * @throws \Exception if oci_close fails
+    * @throws Exception if oci_close fails
     * @return dbal_connection the connection object for chaining operations
     */
     public function clean_up_after()
@@ -165,8 +175,10 @@ class connection
         }
         if((isset($success)) AND ( ! $success)){
             $err = oci_error($this->conn);
-            $msg = 'oci close failed! {' . htmlentities($err->getCode()) . ': ' . htmlentities($err->getMessage() . '}', 526);
-            throw new \Exception($msg);
+            $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($err['message']));
+            $this->ci['errorMessage'] = $message;
+            $this->ci['errorCode'] = htmlentities($err['code']);
+            throw new Exception('oci close failed!', 523);
         }
         return $this;
     }    

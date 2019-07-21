@@ -17,5 +17,9 @@
 	        "type": "vcs",
 	        "url": "https://github.com/rastatech/odbal"
 	    }
-	]
+	],
+	"require": {
+		"php": ">=5.6.0",
+		"ext-oci8": ">=2.0.0"
+	}
 }
