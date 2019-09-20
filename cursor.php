@@ -1,6 +1,6 @@
 <?php
 namespace rastatech\odbal;
-use Exception;
+use \Exception;
 
 /**
  * Abstraction of the Oracle cursor creation process / resource and related functionality for better maintainability/readability

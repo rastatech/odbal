@@ -1,6 +1,6 @@
 <?php
 namespace rastatech\odbal;
-use Exception;
+use \Exception;
 
 /**
  *

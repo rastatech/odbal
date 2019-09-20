@@ -1,6 +1,6 @@
 <?php
 namespace rastatech\odbal;
-use Exception;
+use \Exception;
 
 /**
  * Abstraction of the Oracle statement parsing process / statement resource and related functionality for better maintainability/readability
@@ -152,8 +152,8 @@ class statement
      * execute the passed statement
      *
      * @param	resource 	$outcursor_obj	the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
-     * @throws Exception	exception on failure
      * @return Oracle the oracle object for chaining operations
+     *@throws Exception	exception on failure
      */
     public function execute_statement($outcursor_obj = FALSE)
     {
@@ -201,8 +201,8 @@ class statement
     /**
      * Frees resources after use
      *
-     * @throws Exception if oci_free_statement fails
      * @return Oracle the oracle object for chaining operations
+     *@throws Exception if oci_free_statement fails
      */
     public function clean_up_after()
     {

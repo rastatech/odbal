@@ -1,6 +1,6 @@
 <?php
 namespace rastatech\odbal;
-use Exception;
+use \Exception;
 
 /**
  * Abstraction of the Oracle connection process / resource and related functionality for better maintainability/readability
@@ -146,8 +146,8 @@ class connection
     /**
     * actually commit to the database via oci_commit;
     *
-    * @throws Exception	on commit fail
     * @return dbal_connection the connection object for chaining operations
+    *@throws Exception	on commit fail
     */
     public function commit()
     {
@@ -165,8 +165,8 @@ class connection
     /**
     * Frees resources after use
     *
-    * @throws Exception if oci_close fails
     * @return dbal_connection the connection object for chaining operations
+    *@throws Exception if oci_close fails
     */
     public function clean_up_after()
     {
