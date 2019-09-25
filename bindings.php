@@ -130,7 +130,7 @@ class bindings
             $this->bound_vars[$bind_var] = $bind_value;
             //dynamically add a public class attribute by which to access the bound var:
             $this->$bind_var = ((is_array($bind_value)) AND (array_key_exists('value', $bind_value))) ? $this->bound_vars[$bind_var]['value'] : $this->bound_vars[$bind_var];
-            $b[$bind_var] = $this->_bind_pkg_arrayedParams($stmt, $bind_var, $bind_var, $bind_value); //TEST USING: $b[$bind_var] =  oci_bind_by_name($stmt, $bind_var, $bind_value);
+            $b[$bind_var] = $this->_bind_pkg_arrayedParams($stmt, $bind_var, $bind_value); //TEST USING: $b[$bind_var] =  oci_bind_by_name($stmt, $bind_var, $bind_value);
             if (!$b[$bind_var]) {
                 $err = oci_error($stmt);
                 $errMsg = 'bind by name failed! Variable' . $bind_var . '; error message: ' . htmlentities($err['message']) . '; statement to bind was: {' .
