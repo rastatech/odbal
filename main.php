@@ -150,7 +150,7 @@ class main
                 $cleaned_vars[$key] = NULL;//add the key to the payload
                 continue;
             }
-            $numberRegEx = '~^\$?((\d+,?\d+\.\d{2})|(0\.00)|(\d+))~';
+            $numberRegEx = '~^\$?((\d+,?\d+\.\d+)|(0\.00)|(\d+))$~';
             $value = (preg_match($numberRegEx, $standardized_payload[$key])) ? preg_replace("/[^0-9.]/", "", $standardized_payload[$key]) : $standardized_payload[$key];
             $cleaned_vars[$key] = $value;
         }
