@@ -7,7 +7,7 @@ use \Exception;
 * Also provides a public row_count variable for determining the size of the result set
 * 
 *
- * @package URL_ShortR
+ * @package \ODBAL
  * @subpackage dbal
  * @author todd.hochman
 * @uses dbal_configurator a trait containing some configuration setting code that is used across several of the above classes

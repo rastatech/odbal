@@ -13,7 +13,7 @@ use \Exception;
  * This is the main DBAL class. It leverages several sub-classes mentioned below. 
  *  
  *
- * @package URL_ShortR
+ * @package \ODBAL
  * @subpackage dbal
  * @author todd.hochman
  * @uses dbal_connection the Oracle connection object

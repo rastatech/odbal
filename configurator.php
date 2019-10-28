@@ -8,7 +8,7 @@ namespace rastatech\odbal;
 /**
  * Trait to abstract some configuration-loading code that we needed >1 place
  *
- * @package URL_ShortR
+ * @package \ODBAL
  * @subpackage dbal
  * @author todd.hochman
  * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those
