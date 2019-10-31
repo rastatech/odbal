@@ -8,7 +8,7 @@ namespace rastatech\odbal;
  * Otherwise there are ways to set any of these params during Oracle object construction or later
  *
  *
- * @package \ODBAL
+ * @package URL_ShortR
  * @subpackage dbal
  * @author todd.hochman
  * @link http://www.php.net/manual/en/function.oci-fetch-all.php
@@ -16,8 +16,7 @@ namespace rastatech\odbal;
  * @version 2.1
  * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those
  */
-$configs = [    'cursor'    => ['out_cursor'	=> FALSE, //false for Function calls and procedure calls with no OUT CURSOR, true otherwise
-                                'outcursorName' => 'bindvar_OUTCUR',//default string for use in variables that denote packaged procedure OUT parameters
+$configs = [    'cursor'    => ['out_cursor'	=> FALSE, //false for Function / procedure calls with no OUT CURSOR, true or an array or cursor names otherwise
                 ],
                 'connection' => ['user'     => '',
                                 'pw'        => '',

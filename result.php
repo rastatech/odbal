@@ -36,9 +36,9 @@ class result
     
     /**
     *
-    * @var integer publically-accessible row count for the result set
+    * @var integer|integer-array publically-accessible row count for the result set
     */
-    public $row_count = 0;
+    public $row_count;
 
     /**
     * some factored-out-for-reuse configuration setting code in the form of a Trait
@@ -75,29 +75,47 @@ class result
     */
     public function get_result($resource2fetch)
     {
+        $success = [];
         if(is_string($resource2fetch)){
+//            echo "string result<br/>";
+//            die('string result!');
             return $this->ci->$resource2fetch;
         }
         if(is_array($resource2fetch)){
+//            echo "array result<br/>";
             $result = [];
             foreach($resource2fetch as $cursorKey => $cursorObj){
                 $success[$cursorKey] = oci_fetch_all($cursorObj, $result[$cursorKey], $this->_fetch_all_params['skip'], $this->_fetch_all_params['maxrows'], $this->_fetch_all_params['flags']);
+                $this->row_count[$cursorKey] = count($result[$cursorKey]);
             }
-            $this->row_count = count($success);
+//            echo 'success was [' .  var_export($success, TRUE) . '] and rowcount was [' . var_export($this->row_count, TRUE) . ']<br/>';
+//            die('array cursor result!');
+//            var_dump($result);
+//            die('wtf');
         }
         else{
+//            echo "oci fetch result<br/>";
             $success = oci_fetch_all($resource2fetch, $result, $this->_fetch_all_params['skip'], $this->_fetch_all_params['maxrows'], $this->_fetch_all_params['flags']);
             $this->row_count = $success;
+//            echo 'success was [' . $success . '] and rowcount was [' . $this->row_count . ']<br/>';
+//            die('regular cursor result!');
+//            var_dump($result);
+//            die('wtf');
         }
         if(($success === FALSE) OR ((is_array($success)) AND (in_array(FALSE, $success, TRUE)))){//strict comparison to distinguish 0 rows returned from FALSE (failure)
             $failedKey = (is_array($success)) ? array_search(FALSE, $success, TRUE) : FALSE;
             $erroredResource = ( ! $failedKey) ? $resource2fetch : $resource2fetch[$failedKey];
             $exception = oci_error($erroredResource);
-            $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));
-            $this->ci['errorMessage'] = $message;
-            $this->ci['errorCode'] = htmlentities($exception['code']);
-            throw new Exception('oci fetch all failed!', 527);
+            $this->_throwOCIerr($exception);
         }
         return $result;
+    }
+
+    protected function _throwOCIerr($exception)
+    {
+        $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));
+        $this->ci['errorMessage'] = $message;
+        $this->ci['errorCode'] = htmlentities($exception['code']);
+        throw new Exception('oci fetch all failed!', 527);
     }
 }

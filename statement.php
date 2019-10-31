@@ -76,9 +76,9 @@ class statement
 
     /**
      * parse the sql statement for Oracle's purposes
+     * @param Oracle_Connection_Resource $conn the oracle connection to use
+     * @return Oracle the oracle statement object for chaining operations
      *
-     * @return Oracle the oracle object for chaining operations
-     * @param Oracle_Connection_Resourece $conn the oracle connection to use
      */
     public function parse_statement($conn)
     {
@@ -87,12 +87,12 @@ class statement
 //        echo get_resource_type($conn);
 ////        oci_close($conn);
 ////        die(var_dump($conn));
-//        print_r($conn); 
+//        print_r($conn);
 //        if( ! $conn){
-//           $conn = $this->
+//           echo 'no conn!<br/>';
 //        }
 //        if($conn === NULL){
-//            echo 'conn is null!';
+//            echo 'conn is null!<br/>';
 //        }
 //        
         $this->stmt = oci_parse($conn, $this->sql);
@@ -104,6 +104,8 @@ class statement
             $this->ci['errorCode'] = htmlentities($exception['code']);
             throw new Exception('oci parse failed!', 518);
         }
+//        echo get_resource_type($this->stmt);
+//        echo ' is the statement after oci_parse<br/>';
         return $this;
     }
 
@@ -124,15 +126,15 @@ class statement
      * figures out the type of SQL we have so we can process accordingly
      * choices are:
      * #a valid package invocation string
-     * #a valid pass-thru SQL statement
-     *
-     * There was a 3rd type @ one point but that is no longer supported
+     * #a valid pass-thru SQL statement -- currently unsupported as of 2019.10.29
      *
      * @return string the type of SQL to process
      * @throws Exception if we can't figure out the type of sql this is
      */
     protected function _match_sqlType()
     {
+//        var_dump($this->sql);
+//        echo "is the bloody SQL at the statement object match type<br/>";
         if(is_array($this->__sqltypes)){
             foreach($this->__sqltypes as $type => $regex2checkvs){
                 $pattern = '@' . $regex2checkvs . '@is'; //delimit pattern & make case-insensitive
@@ -149,7 +151,7 @@ class statement
     }
 
     /**
-     * execute the passed statement
+     * execute the passed statement, executing CURSOR objects 1st
      *
      * @param	resource 	$outcursor_obj	the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
      * @return Oracle the oracle object for chaining operations
@@ -157,11 +159,12 @@ class statement
      */
     public function execute_statement($outcursor_obj = FALSE)
     {
+//        echo "executing outcursor? " . (($outcursor_obj) ? 'true!' : 'false.');
         if(( ! $outcursor_obj) OR (($outcursor_obj->out_cursor) AND ( ! is_array($outcursor_obj->out_cursor)))){
             $executeOn = ( ! $outcursor_obj) ? $this->stmt : $outcursor_obj->out_cursor;
             $success = $this->_safe_execute($executeOn);
         }
-        elseif(is_array($outcursor_obj->out_cursor)){
+        elseif(is_array($outcursor_obj->out_cursor)){//handles an array of OUT CURSORs
             foreach($outcursor_obj->out_cursor as $outcursorname => $outcursor){
                 $success[] = $this->_safe_execute($outcursor);
             }
@@ -187,6 +190,7 @@ class statement
     {
         try {
             $success = oci_execute($executeOn);
+//            echo ($success) ? "execute succeeded" : 'execute failed';
         }
         catch (exception $e) {
             $e = oci_error($this->stmt);
