@@ -14,6 +14,6 @@ One last set of things you'll need to define are the following arrays:
 - Oh, and if you are using a _Function_ instead of a _Procedure_, you'll want to define the 'function_return_params' - a set of strings or string suffixes that the ODBAL will recognize as a function return variable. This works similarly to the non-`CURSOR` OUT vars, but you can pass in that parameter name as the 2nd argument to the `run_sql` method to get the value back directly.  
 
  
-I set these arrays currently via an `.ini` file defined in a location external to the application and that is retrieved and consumed at the application level, but you can do them in the model, or whatever. 
+I set these arrays currently via an `.ini` file defined in a location external to the application and that is retrieved and consumed at the application level, but you can do them in the model, or whatever. An example of some suffix arrays for an `.ini` file is in the wiki. 
 
 I've included a directory of _example_models_ for you to see a coupla different ways to include these arrays. 
