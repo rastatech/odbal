@@ -2,40 +2,29 @@
 
 
 namespace rastatech\odbal;
+use \Exception;
 
 /**
  *
  * Abstraction of the payload modifying operations
  *
- * these were taking up too much room in the main class
+ * these were taking up too much room in the main class;
+ *
+ *
  *
  *
  * @package \ODBAL
- * @subpackage dbal
  * @author todd.hochman
  *
- * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those
+ * @todo actually implement this and debug it
  */
-class payload
+trait payload
 {
     /**
      *
      * @var string  the string used for the DBAL to identify PL/SQL OUT variables; this string must be a suffix to the variable name
      */
     protected $_outvarIDstring = '';
-
-    /**
-     * potentially allows you to override or add additional configuration / functionality upon construction if you extend this class with your model
-     *
-     * @param Slim/Container $ci The slim Dependency Injection Container
-     * @param integer the connection flavor -- see /dbal/connection
-     *
-     * @see dbconfigs.php
-     */
-    public function __construct($ci)
-    {
-        $this->ci = $ci; //establish the container object; currently used for the DB configs only, but anything we need from the routes or anyplace we can get from here
-    }
 
     /**
      * Function to validate payloads for POST, PUT operations vs. what is described in the models that are children of this class.

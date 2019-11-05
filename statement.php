@@ -6,7 +6,6 @@ use \Exception;
  * Abstraction of the Oracle statement parsing process / statement resource and related functionality for better maintainability/readability
  *
  * @package \ODBAL
- * @subpackage dbal
  * @author todd.hochman
  * @uses dbal_configurator a trait containing some configuration setting code that is used across several of the above classes
  * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those

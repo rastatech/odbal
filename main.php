@@ -14,7 +14,6 @@ use \Exception;
  *  
  *
  * @package \ODBAL
- * @subpackage dbal
  * @author todd.hochman
  * @uses dbal_connection the Oracle connection object
  * @uses dbal_statement the Oracle statement object
@@ -78,6 +77,11 @@ class main
     * some factored-out-for-reuse configuration setting code in the form of a Trait
     */
     use configurator;
+
+    /**
+     * some factored-out-for-length payload handling code in the form of a Trait
+     */
+    use payload;
     
     /**
     * potentially allows you to override or add additional configuration / functionality upon construction if you extend this class with your model
@@ -244,14 +248,13 @@ class main
                 $return = (( ! $cleanStatement) OR ( ! $cleanConnection)) ? FALSE : TRUE;
                 break;
             case 'validate':
-                $payload = new payload($this->ci);
                 if ($arguments){//arguments in this case are the payload to validate, and the model to validate against.
                     if(count($arguments != 2)){
                         throw new Exception("you must supply a payload and a model to main::validate for it to function.");
                     }
                     $payload2validate = $arguments[0];
                     $model2validatevs = $arguments[1];
-                    $return = $payload->validatePayload($payload2validate,  $model2validatevs);
+                    $return = $this->validatePayload($payload2validate,  $model2validatevs);
                 }
                 break;
             default:
