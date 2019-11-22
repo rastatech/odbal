@@ -2,6 +2,7 @@
 
 namespace rastatech\odbal;
 
+use ArrayObject;
 use \DateTime;
 use \Exception;
 
@@ -230,10 +231,15 @@ class bindings
         }
         elseif (is_array($bind_value)){//test for arrayed value-ness
             $binding_info = $this->_parse4arrayINparam($bind_value);
+            if((array_key_exists('value', $binding_info)) AND ($binding_info['value'] != $this->$bind_var)){
+                $this->$bind_var = $binding_info['value']; //provide a means to fix positive exponents in floats that Slim turns into spaces from the parameter
+//                echo "using massaged  value of " . $this->$bind_var . "<br/>\n";
+            }
 //            echo "binding array: $bind_var<br/>";
 //            echo "parsing attributes for $bind_var: <br/>";
 //            var_dump($binding_info);
-
+//            echo 'type is ' . $binding_info['type'];
+//            die("done parsing arrayed params!<br/>\n");
             $boundVar = oci_bind_array_by_name($stmt, $placeholder[$bind_var], $this->$bind_var, $binding_info["length"]['max_table_length'], $binding_info["length"]['max_item_length'], $binding_info['type']);
         }
         else{ //otherwise it's a normal IN param; act accordingly:
@@ -258,7 +264,7 @@ class bindings
         $length_info['max_table_length'] = count($bind_valueArray);
         $length_info['max_item_length'] = -1; //let oci figure out the longest individual item itself
         $parsedAttributes['length'] = $length_info;
-        $parsedAttributes['type'] = $this->_parse_bindVar_4type($bind_valueArray);
+        $parsedAttributes = $this->_parse_bindVar_4type($bind_valueArray, $parsedAttributes);
 
         return  $parsedAttributes;
     }
@@ -378,44 +384,88 @@ class bindings
      * derives the bind key type for oracle array binding purposes
      *
      * @param mixed-array     $bind_valueArray    assumes an arrayed bind_value
+     * @param mixed-array     $parsedAttributes      the attributes array
      * @return long        the calculated or derived value type for binding
      */
-    protected function _parse_bindVar_4type($bind_valueArray)
+    protected function _parse_bindVar_4type($bind_valueArray, $parsedAttributes)
     {
-//        if (is_array($bind_valueArray)){// arrayed raw values, not compound values
-            $testArray = array_filter($bind_valueArray); //get rid of NULL, FALSE, 0 values
-            //empty trap:
-            if(!$testArray){
-                return SQLT_CHR;
-            }
-            $testValue = $testArray[0];
-//            $type = $this->_parse_bindVar_4type($testValue, TRUE);//recurse
-            switch ($testValue) {
-                case (is_float($testValue))://SQLT_FLT - for arrays of FLOAT.
-//                    return SQLT_FLT;
-                    $type =  SQLT_FLT;
-                    break;
-                case (is_bool($testValue)):
-                case (is_int($testValue)):// SQLT_INT - for arrays of INTEGER (Note: INTEGER it is actually a synonym for NUMBER(38), but SQLT_NUM type won't work in this case even though they are synonyms).
-//                    return SQLT_INT;
-                    $type =  SQLT_INT;
-                    break;
-                case (is_numeric($testValue)):// SQLT_NUM - for arrays of NUMBER.
-//                    return SQLT_NUM;
-                    $type = SQLT_NUM;
-                    break;
-                default:
-                    try {
-                        new DateTime($testValue);
-//                        return SQLT_ODT;//SQLT_ODT - for arrays of DATE.
-                        $type = SQLT_ODT;//SQLT_ODT - for arrays of DATE.
-                    } catch (Exception $e) {
-//                        return SQLT_CHR;    //SQLT_CHR - for arrays of VARCHAR2. not doing SQLT_AFC - for arrays of CHAR, SQLT_VCS - for arrays of VARCHAR, SQLT_AVC - for arrays of CHARZ, SQLT_STR - for arrays of STRING
-                        $type = SQLT_CHR;    //SQLT_CHR - for arrays of VARCHAR2. not doing SQLT_AFC - for arrays of CHAR, SQLT_VCS - for arrays of VARCHAR, SQLT_AVC - for arrays of CHARZ, SQLT_STR - for arrays of STRING
+//        die('parsing');
+        $floatClues = [''];
+        $arrObj = new ArrayObject($bind_valueArray);
+        $arrIterator = $arrObj->getIterator();
+//        echo "iterating....<br/>";
+        $regexes = ['float' => '@-?\d+\.?\d*[eE][- +]\d+@',
+                    'num' => '@^-?\d+\.\d*$@',
+                    'int' => '@^-?\d+$@',
+                    'date' => '@(((\d{2}-[A-Z]{3}-\d{2})|(\d{2}/\d{2}/\d{2}(?:\d{2})?)|(\d{4}[-.]\d{2}[-.]\d{2})))+@'
+                    ];
+        $valueMatches = ['float' => 0,
+                        'num' => 0,
+                        'int' => 0,
+                        'date' => 0,
+                        'varchar' => 0
+                        ];
+        while($arrIterator->valid()) {
+//            echo $arrIterator->key() . ' => ' . $arrIterator->current() . "<br/>\n";
+            $current = trim($arrIterator->current(),'"\''); //trim any quotes
+            $matches = 0;
+            foreach ($regexes as $regexkey => $regexPattern){
+                $matching =  preg_match($regexPattern, $current, $matches);
+                if($matching){
+//                    echo "woohoo! matching $regexkey<br/>";
+                    switch ($regexkey){
+                        case 'float':
+                            $valueMatches['float']++;
+                            if(strpos($current, ' ')){
+                                $parsedAttributes['value'] = str_replace(' ', '+', $current);
+//                                echo "fixed the missing positive exponent!<br/>\n";
+                            }
+//                            echo "floating away.... matching $regexkey with value of " . $valueMatches['float'] . "<br/>";
+                            break;
+                        case 'num':
+                            $valueMatches['num']++;
+//                            echo "Numnums! matching $regexkey with value of " . $valueMatches['num'] . "<br/>";
+                            break;
+                        case 'int':
+                            $valueMatches['int']++;
+//                            echo "INTeresting...  matching $regexkey with value of " . $valueMatches['int'] . "<br/>";
+                            break;
+                        case 'date':
+                            $valueMatches['date']++;
+//                            echo "Now your're talkin'!  matching $regexkey with value of " . $valueMatches['date'] . "<br/>";
+                            break;
                     }
-                    //Not doing SQLT_LVC - for arrays of LONG VARCHAR.
+                    $matches++;
+                    break;
+                }
             }
-//            echo'sql type is ' . $type . "<br/>";
-            return $type;
+            if( ! $matches){
+                $valueMatches['varchar']++;
+//                echo "uhoh! VarChar Territory.... matching $regexkey with value of " . $valueMatches['varchar'] . "<br/>";
+            }
+            $arrIterator->next();
+        }
+        //hierarchy of types
+        if($valueMatches['varchar']){
+//            echo  "type is varchar <br/>\n";
+            $parsedAttributes['type'] = SQLT_CHR;
+            return $parsedAttributes;
+        }
+        $numArray = array($valueMatches['float'], $valueMatches['num'], $valueMatches['int']);
+        $hasNumsToo = count(array_filter($numArray));
+        if(( ! $hasNumsToo) AND $valueMatches['date']){
+//            echo  "type is date <br/>\n";
+            $parsedAttributes['type'] = SQLT_ODT;
+            return $parsedAttributes;
+        }
+        if($hasNumsToo){
+            $numType = ($valueMatches['float']) ? SQLT_FLT : (($valueMatches['num']) ? SQLT_NUM : SQLT_INT);
+            $msg = ($numType == SQLT_FLT) ? 'float' : (($numType == SQLT_NUM) ? 'num' : 'int');
+//            echo "type is  $msg  <br/>\n";
+            $parsedAttributes['type'] = $numType;
+            return $parsedAttributes;
+        }
+        $parsedAttributes['type'] = SQLT_CHR; //could be both dates and numbers, but nothing outside of that, in which case VarChar2...
+        return $parsedAttributes;
     }
 }
