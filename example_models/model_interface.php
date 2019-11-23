@@ -1,8 +1,8 @@
 <?php
 
 /*
- * @package UDS
- * @subpackage models
+ * @package \ODBAL
+ * @subpackage example_models
  * @author todd.hochman
  * 
  * Interface to guarantee consistency accross DB type Model instances
@@ -21,8 +21,8 @@ interface model_interface
 {
     /**
      * this should include a call to the parent /dbal/main method at some point and return a mixed array
-     * 
-     * @param type $bindVars
+     *
+     * @param bool|array  $bindVars
      * @param mixed $outvar
      */
     public function run_sql($bindVars = FALSE, $outvar = NULL);

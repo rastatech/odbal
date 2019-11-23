@@ -1,14 +1,16 @@
 <?php
 namespace models;
 
+use odbal\main;
+
 /**
  * Model for DB ops, leverages Oracle DBAL
  * 
- * @package url_shortr
- * @subpackage models 
+ * @package \ODBAL
+ * @subpackage example_models
  * @author todd.hochman
  */
-class urlshortr extends \odbal\main
+class urlshortr extends main
 {
     /**
      *

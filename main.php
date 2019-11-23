@@ -102,26 +102,17 @@ class main
      * This uses magic __call methods to abstract the various pieces of connection
      * 
      * @param boolean|mixed-array $bindVars the array of variables to bind
-     * @param NULL|string the return variable if other than the cursor
+     * @param NULL|string the return variable(s) if other than the cursor
      * 
-     * @return mixed either the cursor object if only one, or the return var if only one
+     * @return mixed either the cursor object(s) if only one, or the return var if only one
      */
     public function run_sql($bindVars = FALSE, $outvars = NULL)
     {
-//        echo "outvars are : <br/>";
-//        var_dump($outvars);
-////        echo "bindvars are : <br/>";
-////        var_dump($bindVars);
-//        die('dumped  from run_sql');
         $this->parse();//creates $this->statementObj via __call()
         $this->bind_vars($bindVars);
         $this->bind_cursor();
         $this->execute();
-//        var_dump($this->bindingsObj->v_num_retvar);
-//die('raw bound object direct call');
         $resultArray = ($outvars) ? $this->result($outvars) : $this->result();
-//        var_dump($resultArray);
-//        die('<br/> is the really raw result array');
         $this->commit();
         if( ! $this->cleanup()){
             $this->ci->logger->error('DBAL cleanup failed!');
@@ -151,7 +142,6 @@ class main
     * @return mixed the requested attribute
     */
     public function __get($key){
-//        die($key);
         switch($key){
             case 'sql':
                 $return = ($this->statementObj) ? $this->statementObj->sql : NULL;
@@ -177,16 +167,17 @@ class main
         }
         return $return;
     }
-    
+
     /**
      * Magic __call function to handle abstracted object access
-     * 
-     * Use this function to give \odbal\main (and objects that extend it) access to dependent objects, e.g. the connection, statement or bindings objects 
+     *
+     * Use this function to give \odbal\main (and objects that extend it) access to dependent objects, e.g. the connection, statement or bindings objects
      * the *_sql_elements* attribute comes from the models that extend this class
-     * 
-     * @param string $name  the faux method call 
+     *
+     * @param string $name the faux method call
      * @param mixed-array $arguments    optional additional parameters; each param will be an additional element of the $arguments array
-     * @return mixed    various returns include the statement resource, the connection, or object instances depending....
+     * @return mixed    various returns include the statement resource, the connection, the result(s), or object instances depending....
+     * @throws Exception
      */
     public function __call($name, $arguments)
     {     
@@ -228,17 +219,19 @@ class main
             case 'result':
                 $model_sql_elements = (($arguments) AND (array_key_exists(1, $arguments))) ? $arguments[1] : [];
                 $result_param = (($arguments) AND ($arguments[0])) ? $arguments[0] : NULL;//set result var as an arg for non-cursor results
-//            die($result_param);
                 $this->resultObj = ( ! $this->resultObj) ? new result($this->ci, $result_param, $model_sql_elements) : $this->resultObj;
                 if($this->outCursor){//uses dynamic __get()
-//                    echo 'yes there is an outcursor!<br/>';
                     $resource2fetch = $this->outCursor;
-//                    var_dump($resource2fetch);
-//                    die('is the resource to fetch from result.php');
                     return $this->resultObj->get_result($resource2fetch);
                 }
                 if($result_param){
-                    return $this->bindingsObj->$result_param;
+                    if( ! is_array($result_param)){
+                        return $this->bindingsObj->$result_param;
+                    }
+                    foreach ($result_param as $outvar_key){
+                        $returns[$outvar_key] = $this->bindingsObj->$outvar_key;
+                    }
+                    return $returns;
                 }
                 $return = NULL;
                 break;

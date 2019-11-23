@@ -17,7 +17,7 @@ class result
 {
     /**
     *
-    * @var Container_object    the Dependency Injection Container  
+    * @var   ContainerInterface  the Dependency Injection Container
     */
     protected $ci;
     
@@ -44,63 +44,64 @@ class result
     * some factored-out-for-reuse configuration setting code in the form of a Trait
     */
     use configurator;
-    
+
     /**
-    * Allows you to set a public attribute for an atomic (i.e. non-cursor) result
-    * 
-    * @param Slim/Container $ci The slim Dependency Injection Container
-     * @param string    the name of the atomic_result we expect back instead of a cursor, if so
-    * @param string $model_sql_elements the array of DB configurations; must contain the same array keys as found in the db_creds file
-    * 
-    * @see dbconfigs.php
-    */
+     * Allows you to set a public attribute for an atomic (i.e. non-cursor) result
+     *
+     * @param Slim/Container $ci The slim Dependency Injection Container
+     * @param bool  $atomic_result
+     * @param array $model_sql_elements the array of DB configurations; must contain the same array keys as found in the db_creds file
+     *
+     * @see dbconfigs.php
+     */
     public function __construct($ci, $atomic_result = FALSE, $model_sql_elements = [])
     {
         $this->ci = $ci;
-//        if($atomic_result){
+        if($atomic_result){
 //            $this->$atomic_result = $this->ci->$atomic_result;
-//        }        
+            if( ! is_array($atomic_result)){
+                $this->$atomic_result = $atomic_result;
+            }
+            else{
+                foreach ($atomic_result as $atomic_result_key => $atomic_result_item){
+                    if( ! is_numeric($atomic_result_key)){
+                        $this->$atomic_result_key = $atomic_result_item;
+                        continue;
+                    }
+                    $this->$atomic_result_item = NULL; //we're just passing the names as placeholders, no values
+                }
+            }
+        }
         $loadedConfigs = $this->_get_configs($model_sql_elements);
         $this->_assign2classVars($loadedConfigs);     
-    }    
-    
+    }
+
     /**
-    * Handles the oci_fetch_all, accounting for multiple cursors
-    * 
-    * Should handle the parsed statement too, for sql without a return CURSOR or OUT CURSOR
-    * 
-    * @param Oracle statement|Oracle Cursor|multiple Oracle Cursors    $resource2fetch the statement, cursor, or array of cursors upon which to fetch_all
-    * 
-    * @return mixed-array the result of the fetch
-    */
+     * Handles the oci_fetch_all, accounting for multiple cursors
+     *
+     * Should handle the parsed statement too, for sql without a return CURSOR or OUT CURSOR
+     *
+     * @param  statement| Cursor     $resource2fetch the statement, cursor, or array of cursors upon which to fetch_all
+     *
+     * @return array mixed-array the result of the fetch
+     * @throws Exception
+     */
     public function get_result($resource2fetch)
     {
         $success = [];
         if(is_string($resource2fetch)){
-//            echo "string result<br/>";
-//            die('string result!');
             return $this->ci->$resource2fetch;
         }
         if(is_array($resource2fetch)){
-//            echo "array result<br/>";
             $result = [];
             foreach($resource2fetch as $cursorKey => $cursorObj){
                 $success[$cursorKey] = oci_fetch_all($cursorObj, $result[$cursorKey], $this->_fetch_all_params['skip'], $this->_fetch_all_params['maxrows'], $this->_fetch_all_params['flags']);
                 $this->row_count[$cursorKey] = count($result[$cursorKey]);
             }
-//            echo 'success was [' .  var_export($success, TRUE) . '] and rowcount was [' . var_export($this->row_count, TRUE) . ']<br/>';
-//            die('array cursor result!');
-//            var_dump($result);
-//            die('wtf');
         }
         else{
-//            echo "oci fetch result<br/>";
             $success = oci_fetch_all($resource2fetch, $result, $this->_fetch_all_params['skip'], $this->_fetch_all_params['maxrows'], $this->_fetch_all_params['flags']);
             $this->row_count = $success;
-//            echo 'success was [' . $success . '] and rowcount was [' . $this->row_count . ']<br/>';
-//            die('regular cursor result!');
-//            var_dump($result);
-//            die('wtf');
         }
         if(($success === FALSE) OR ((is_array($success)) AND (in_array(FALSE, $success, TRUE)))){//strict comparison to distinguish 0 rows returned from FALSE (failure)
             $failedKey = (is_array($success)) ? array_search(FALSE, $success, TRUE) : FALSE;
@@ -111,6 +112,13 @@ class result
         return $result;
     }
 
+    /**
+     * Abstraction of the OCI error catching
+     *
+     * @param $exception the OCI exception
+     * @throws Exception our customized \Exception
+     *
+     */
     protected function _throwOCIerr($exception)
     {
         $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));

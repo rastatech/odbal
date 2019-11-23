@@ -23,13 +23,13 @@ class bindings
 {
     /**
      *
-     * @var Container_object    the Dependency Injection Container
+     * @var Container    the Dependency Injection Container
      */
     protected $ci;
 
     /**
      *
-     * @var public variable so we can access bound variables; will be a numerically indexed array in order of the array of bound variables
+     * @var array public variable so we can access bound variables; will be a numerically indexed array in order of the array of bound variables
      */
     public $bound_vars = array();
 
@@ -90,7 +90,7 @@ class bindings
      * @param string $sqlType the type of SQL being processed, e.g. stored procedure (which is all that is currently supported, but leaving it open....)
      * @param bool   $bind_var_array
      * @param bool   $stmt    the parsed OCI statement resource
-     * @return boolean|boolean-array    the results of the binding operation(s)
+     * @return array|void boolean-array    the results of the binding operation(s)
      * @throws Exception it doesn't, tho.....
      * @uses           __bindVars2SQL()
      * @link           https://www.php.net/manual/en/function.oci-bind-by-name.php valid OCI datatypes for atomic values
@@ -112,9 +112,9 @@ class bindings
      * Determines the SQL type and passes off the actual variable binding to the appropriate method for binding.
      * Only one method (for packages) is supported currently, but this method is designed to support pass-thru SQL when that is added, if ever
      *
-     * @param OCI Resource $stmt    the parsed statement resource
+     * @param         $stmt
      * @param integer $sqlType the type of SQL statement being bound
-     * @return integer|integer-array the array of boolean return values for the binding operation(s);
+     * @return array|void integer-array the array of boolean return values for the binding operation(s);
      * @throws Exception if no variables were available for binding
      */
     protected function _bindVars2SQL($stmt, $sqlType)
@@ -138,8 +138,8 @@ class bindings
      * This function will also account for arrayed parameter values, i.e. if the passed parameter value is an array of raw values.
      * This enables support of array-type Oracle parameters, such as a parameter of type table or VARRAY.
      *
-     * @param OCI_statement_resource $stmt the Oracle parsed statement resource handle
-     * @return boolean-array the array of binding results
+     * @param statement $stmt the Oracle parsed statement resource handle
+     * @return array boolean-array the array of binding results
      * @throws Exception failure to bind variables will throw an exception
      */
     protected function _bind_pkg($stmt)
@@ -160,8 +160,8 @@ class bindings
     /**
      * Placeholder function for some functionality that was not commonly used and was too much trouble to port over if we weren't going to need it.
      *
-     * @param OCI_statement_resource $stmt the Oracle parsed statement resource handle
-     * @return type
+     * @param statement $stmt the Oracle parsed statement resource handle
+     * @return void
      * @throws Exception this method is not yet implemented
      */
     protected function bind_passThruSQL($stmt)
@@ -179,10 +179,10 @@ class bindings
     /**
      * merges any existing array of variables to bind with a new array of 'em
      *
-     * typically accessed publically; no internal usage
+     * typically accessed publicly; no internal usage
      *
      * @param  mixed-array    $newVars2bind  the array of variables to bind in the format of name => value
-     * @return mixed-array the merged array
+     * @return array mixed-array the merged array
      */
     public function merge_vars($newVars2bind)
     {
@@ -193,10 +193,11 @@ class bindings
     /**
      * Handles variable binding, optionally using length, type parameters, and handling arrayed variables with oci_bind_array_by_name
      *
-     * @param rastatech\odbal\statement $stmt the Oracle statement object
-     * @param string $bind_var the variable name to bind
-     * @param array $bind_value the value of the variable to bind, in this case a compound array of length, type, value (if any)
+     * @param statement $stmt       the Oracle statement object
+     * @param string                    $bind_var   the variable name to bind
+     * @param array                     $bind_value the value of the variable to bind, in this case a compound array of length, type, value (if any)
      * @return array the bound variable
+     * @throws Exception
      */
     protected function _bind_pkg_parameter($stmt, $bind_var, $bind_value)
     {
@@ -229,7 +230,7 @@ class bindings
     /**
      * gets the needed binding attributes for an arrayed value
      *
-     * @param $bind_value
+     * @param $bind_valueArray the bound array variable, which should obviously be an array
      * @return mixed
      */
     protected function _parse4arrayINparam($bind_valueArray)
@@ -238,7 +239,6 @@ class bindings
         $length_info['max_item_length'] = -1; //let oci figure out the longest individual item itself
         $parsedAttributes['length'] = $length_info;
         $parsedAttributes = $this->_parse_bindVar_4type($bind_valueArray, $parsedAttributes);
-
         return  $parsedAttributes;
     }
 
@@ -309,8 +309,8 @@ class bindings
      * valid OCI datatypes (links below), or an abbreviation of same where you just leave off the "SQLT_" part and that'll get filled in for you.
      *
      * @param $bind_value   the compound value to process
-     * @param $key  string the bind_var being processed
-     * @return mixed-array|bool the processed binding attributes for the value if the compound value was successfully processed, FALSE if otherwise
+     * @param $key          string the bind_var being processed
+     * @return bool|int|mixed mixed-array|bool the processed binding attributes for the value if the compound value was successfully processed, FALSE if otherwise
      */
     protected function _parseCompoundValues($bind_value, $key)
     {

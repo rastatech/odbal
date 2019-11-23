@@ -38,25 +38,19 @@ class cursor
     
     public function __construct($ci, $model_sql_elements)
     {
-//        var_dump($model_sql_elements);
-//        echo "<br/> are the model_sql_elements<br/>";
         $this->ci = $ci;
         $loadedConfigs = $this->_get_configs($model_sql_elements);
-//        var_dump($loadedConfigs);
-//        echo "<br/> are the loaded configs<br/>";
-
         $this->_assign2classVars($loadedConfigs);
         $this->outcursorName = ((isset($this->out_cursor)) AND ( ! is_null($this->out_cursor))) ? $this->out_cursor : NULL;
-//        var_dump( $this->outcursorName);
-//        echo "<br/> is the outcursorName<br/>";
-//        die('please Computer Gods help me figure this out soon');
     }
-    
+
     /**
-    * binds the cursor object or objects to the parsed statement resource
-    * @param resource $stmt	the parsed statement resource
-    * @return Oracle the oracle object for chaining operations
-    */    
+     * binds the cursor object or objects to the parsed statement resource
+     *
+     * @param resource $stmt the parsed statement resource
+     * @return cursor the oracle object for chaining operations
+     * @throws Exception
+     */
     public function bind_cursor($stmt)
     {
         if(is_null($this->outcursorName)){
@@ -64,18 +58,14 @@ class cursor
         }
         if( ! is_array($this->outcursorName)){
             if( ! is_null($this->outcursorName)){
-//                echo "binding non-array cursor! " . $this->outcursorName . "<br/>";
                 $bindCursor =  ':'. $this->outcursorName;
                 $success = oci_bind_by_name($stmt, $bindCursor, $this->out_cursor, -1, SQLT_RSET);
-//                echo 'bind success for ' . $this->outcursorName . ' was ' . (($success) ? 'true' : 'false') . "<br/>";
             }
         }
         else{
             foreach($this->outcursorName as $outcursor_placeholder){
                 if( ! is_null($outcursor_placeholder)){
-//                    echo "binding array cursor! " . $outcursor_placeholder . "<br/>";
                     $success[$outcursor_placeholder] = oci_bind_by_name($stmt, ':'. $outcursor_placeholder, $this->out_cursor[$outcursor_placeholder], -1, SQLT_RSET);
-//                    echo "bind success for $outcursor_placeholder was " . (($success[$outcursor_placeholder]) ? 'true' : 'false') . "<br/>";
                 }
             }
         } 
@@ -87,12 +77,15 @@ class cursor
             throw new Exception('OUT CURSOR binding failed!',528);
         }
         return $this;
-    }    
+    }
 
     /**
-    * creates an oracle cursor resource for use in OUT CURSOR results;
-    * @return an object instance of the class for chaining operations
-    */    
+     * creates an oracle cursor resource for use in OUT CURSOR results;
+     *
+     * @param $conn connection the connection object
+     * @return cursor object instance of the class for chaining operations
+     * @throws Exception
+     */
     public function create_cursor($conn)
     {
         if( ! is_array($this->outcursorName)){// Create a new cursor resource

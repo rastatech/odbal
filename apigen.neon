@@ -1,0 +1,30 @@
+extensions:
+        - php
+        - html
+        - phtml
+exclude:
+        - vendor/
+        - logs/
+        - tests/
+        - docs/
+        - nbproject
+accessLevels:
+        - public
+        - protected
+        - private
+charset:
+        - utf-8
+# Generate tree view of classes, interfaces and exceptions
+tree: Yes
+debug: Yes
+sourceCode: Yes
+# Wipe out the destination directory first
+wipeout: Yes
+# Source file or directory to parse
+source:
+        - src/
+        - models/
+        - controllers/
+# Directory where to save the generated documentation
+destination: docs/
+title: Oracle DataBase Abstraction Layer

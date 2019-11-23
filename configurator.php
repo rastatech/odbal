@@ -1,27 +1,21 @@
 <?php
 namespace rastatech\odbal;
-/*
- * @package cwsrf
- * @subpackage dbal
- * @author todd.hochman
- */
 /**
  * Trait to abstract some configuration-loading code that we needed >1 place
  *
  * @package \ODBAL
- * @subpackage dbal
  * @author todd.hochman
  * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those
  */
 trait configurator
 {
     /**
-    * merges the various sources of configuration information
-    * 
-    * @param string-array $model_sql_elements  the array of _sql_elements from the model
-    * 
-    * @return string-array the merged configuration array
-    */
+     * merges the various sources of configuration information
+     *
+     * @param string-array $model_sql_elements  the array of _sql_elements from the model
+     *
+     * @return array|NULL string-array the merged configuration array
+     */
     protected function _get_configs($model_sql_elements)
     {
         $relevantConfigSet = substr(__CLASS__, strrpos(__CLASS__, '\\') + 1);//use the host class name to get the config set to use

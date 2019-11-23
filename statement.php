@@ -75,25 +75,14 @@ class statement
 
     /**
      * parse the sql statement for Oracle's purposes
-     * @param Oracle_Connection_Resource $conn the oracle connection to use
-     * @return Oracle the oracle statement object for chaining operations
      *
+     * @param Oracle_Connection_Resource $conn the oracle connection to use
+     * @return statement the oracle statement object for chaining operations
+     *
+     * @throws Exception
      */
     public function parse_statement($conn)
     {
-////                $conn = oci_connect('URL_SHORTS_USER', 'dfwmnewd', '(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=oradbdev.nmenv.state.nm.us)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=xeidd.nmenv.state.nm.us)))');
-//
-//        echo get_resource_type($conn);
-////        oci_close($conn);
-////        die(var_dump($conn));
-//        print_r($conn);
-//        if( ! $conn){
-//           echo 'no conn!<br/>';
-//        }
-//        if($conn === NULL){
-//            echo 'conn is null!<br/>';
-//        }
-//        
         $this->stmt = oci_parse($conn, $this->sql);
         if( ! $this->stmt)
         {
@@ -103,8 +92,6 @@ class statement
             $this->ci['errorCode'] = htmlentities($exception['code']);
             throw new Exception('oci parse failed!', 518);
         }
-//        echo get_resource_type($this->stmt);
-//        echo ' is the statement after oci_parse<br/>';
         return $this;
     }
 
@@ -112,6 +99,7 @@ class statement
      * Gets the type of SQL we're prcoessing
      *
      * @return string
+     * @throws Exception
      */
     public function get_sqlType()
     {
@@ -152,9 +140,9 @@ class statement
     /**
      * execute the passed statement, executing CURSOR objects 1st
      *
-     * @param	resource 	$outcursor_obj	the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
-     * @return Oracle the oracle object for chaining operations
-     *@throws Exception	exception on failure
+     * @param bool $outcursor_obj the optional resource to execute upon, whether cursor object or parsed statement; defaults to $stmt
+     * @return statement the oracle object for chaining operations
+     * @throws Exception exception on failure
      */
     public function execute_statement($outcursor_obj = FALSE)
     {
@@ -204,8 +192,8 @@ class statement
     /**
      * Frees resources after use
      *
-     * @return Oracle the oracle object for chaining operations
-     *@throws Exception if oci_free_statement fails
+     * @return statement the oracle object for chaining operations
+     * @throws Exception if oci_free_statement fails
      */
     public function clean_up_after()
     {

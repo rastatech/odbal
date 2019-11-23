@@ -8,8 +8,7 @@ namespace rastatech\odbal;
  * Otherwise there are ways to set any of these params during Oracle object construction or later
  *
  *
- * @package URL_ShortR
- * @subpackage dbal
+ * @package ODBAL
  * @author todd.hochman
  * @link http://www.php.net/manual/en/function.oci-fetch-all.php
  * @link http://www.php.net/manual/en/function.oci-fetch-array.php

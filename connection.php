@@ -80,17 +80,17 @@ class connection
     }
 
     /**
-    * instantiate database connection
-    * set both instance and static connection variables to prevent multiple connects
-    *
-    * @throws Kohana_Exception on failure
-    * @param	integer	$connectFlavor	the type of connection:
-    * -0: regular oci_connect (default)
-    * -1: new (separate) connection (oci_new_connect)
-    * -2: permanent connection (oci_pconnect)
-    * @return dbal_connection the connection object for chaining operations
-    * @uses show_error()
-    */
+     * instantiate database connection
+     * set both instance and static connection variables to prevent multiple connects
+     *
+     * @param integer $connectFlavor the type of connection:
+     *                               -0: regular oci_connect (default)
+     *                               -1: new (separate) connection (oci_new_connect)
+     *                               -2: permanent connection (oci_pconnect)
+     * @return connection the connection object for chaining operations
+     * @throws Exception
+     * @uses show_error()
+     */
     public function connect_2db($connectFlavor = NULL)
     {
         if(( ! $this->conn) AND ($this->_validateConnection($this->_cnx_str))){
@@ -103,7 +103,6 @@ class connection
                     $this->conn = oci_new_connect($this->_user, $this->_pw, $this->_cnx_str);
                     break;
                 default://== 0
-//                    $this->conn = oci_connect('waste_api_user', 'wA5tAp1Ur', '(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=172.17.5.100)(PORT=1521)))(CONNECT_DATA=(SID=xeidp)))');
                     $this->conn = oci_connect($this->_user, $this->_pw, $this->_cnx_str);
                     break;
             }
@@ -140,14 +139,14 @@ class connection
             $this->_cnx_str = $cnxString[0]; //only want the connection string part;
         }
         return TRUE;
-    }  
-    
+    }
+
     /**
-    * actually commit to the database via oci_commit;
-    *
-    * @return dbal_connection the connection object for chaining operations
-    *@throws Exception	on commit fail
-    */
+     * actually commit to the database via oci_commit;
+     *
+     * @return connection the connection object for chaining operations
+     * @throws Exception on commit fail
+     */
     public function commit()
     {
         $success = oci_commit($this->conn);
@@ -160,13 +159,13 @@ class connection
         }
         return $this;
     }
-    
+
     /**
-    * Frees resources after use
-    *
-    * @return dbal_connection the connection object for chaining operations
-    *@throws Exception if oci_close fails
-    */
+     * Frees resources after use
+     *
+     * @return connection the connection object for chaining operations
+     * @throws Exception if oci_close fails
+     */
     public function clean_up_after()
     {
         If($this->conn){

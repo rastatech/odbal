@@ -1,15 +1,19 @@
 <?php
 namespace models;
 /*
- * @package UDS
- * @subpackage dbal
+ * @package \ODBAL
+ * @subpackage example_models
  * @author todd.hochman
  * 
  * Parent class giving access to input cleansing as well as future cross-DB-type model needs
  *
- * @author todd.hochman
  */
-class modelbase extends \rastatech\odbal\main implements model_interface
+
+use HTMLPurifier;
+use HTMLPurifier_Config;
+use rastatech\odbal\main;
+
+class modelbase extends main implements model_interface
 {
     /**
      * @var string the element array required by DBAL main, constructed on-the-fly from URL elements
@@ -54,8 +58,8 @@ class modelbase extends \rastatech\odbal\main implements model_interface
      */
     protected function _validatePayload(array $input_parameter_array, array $model = [])
     {
-        $config = \HTMLPurifier_Config::createDefault();
-        $this->_html_purifier = new \HTMLPurifier($config);
+        $config = HTMLPurifier_Config::createDefault();
+        $this->_html_purifier = new HTMLPurifier($config);
         foreach($input_parameter_array as $key => $value){
             $purifiedvalue = $this->_html_purifier->purify($value);
             $purified_payload[$key] = $purifiedvalue;

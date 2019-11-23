@@ -29,10 +29,10 @@ trait payload
     /**
      * Function to validate payloads for POST, PUT operations vs. what is described in the models that are children of this class.
      *
-     * @param mixed-array $payload    the array of key/value pairs that comprises the PUT or POST payload
-     * @param mixed-array $model      the array of key/value pairs for the PUT or POST that are defined in the model
-     * @return boolean  TRUE if the two arrays properly match
-     * @throws Exception    if they don't match
+     * @param array $payload
+     * @param array $model
+     * @return array TRUE if the two arrays properly match
+     * @throws Exception if they don't match
      * @todo debug this thoroughly as it's not being used right now and probably should be
      */
     public function validatePayload(array $payload, array $model){
@@ -57,15 +57,14 @@ trait payload
     /**
      * cleanse the values of stuff that will make Oracle explode
      *
-     * @param string-array $model_keys  the variable names of the model
-     * @param mixed-array $payload  the data submitted for POST or PUT
-     * @return mixed-array
+     * @param $model_keys
+     * @param $payload
+     * @return array mixed-array
      * @TODO fix the $numberRegEx portion to account for float, double, single, integer
      */
     protected function _cleanVars($model_keys, $payload){
         $cleaned_vars = [];
         $standardized_payload = $this->_standardizePayload($payload);//lowercase all keys
-        die('do we have a way to ID outVars before binding? ' . var_export($this->_outvarIDstring, TRUE));
         foreach($model_keys as $key){
             if(strpos($key, $this->_outvarIDstring)){
                 continue;
@@ -89,7 +88,7 @@ trait payload
      * makes sure all array keys are lowercased to avoid missing key issues
      *
      * @param mixed-array $payload the data to standardize
-     * @return mixed-array  the payload with lower-cased keys
+     * @return array mixed-array  the payload with lower-cased keys
      */
     protected function _standardizePayload($payload){
         $standardized_payload = [];
