@@ -85,7 +85,7 @@ class urlshortr extends main
     {
         $this->_sql_elements = $this->_base_sql_elements['put_url'];
          //make DBAL call
-        $vars_array = $this->_validatePayload($URL2shorten, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate   
+        $vars_array = $this->validatePayload($URL2shorten, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate
         $result = $this->run_sql($vars_array, 'return_outvar');
         return $result;
     }
@@ -101,7 +101,7 @@ class urlshortr extends main
     {
         $this->_sql_elements = $this->_base_sql_elements['get_url'];
         //make DBAL call
-        $vars_array = $this->_validatePayload($shortenedURL, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate        
+        $vars_array = $this->validatePayload($shortenedURL, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate
         $result = $this->run_sql($vars_array, 'origurl');
         return $result;
     }
@@ -118,7 +118,7 @@ class urlshortr extends main
          //make DBAL call
          $checkVars = ['shorturl' => $URL2check];
 //         die(var_dump($checkVars));
-        $vars_array = $this->_validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate    
+        $vars_array = $this->validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate
         $result = $this->run_sql($vars_array, 'return_outvar');
         return $result;       
     }
@@ -135,7 +135,7 @@ class urlshortr extends main
          //make DBAL call
          $checkVars = ['url' => $URL2check];
 //         die(var_dump($checkVars));
-        $vars_array = $this->_validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate    
+        $vars_array = $this->validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate
         $result = $this->run_sql($vars_array, 'return_outvar');
         return $result;            
     }
@@ -163,7 +163,7 @@ class urlshortr extends main
          //make DBAL call
          $checkVars = ['urlid' => $urlID];
 //         die(var_dump($checkVars));
-        $vars_array = $this->_validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate    
+        $vars_array = $this->validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate
         $result = $this->run_sql($vars_array, 'return_outvar');
         return $result;           
     }
@@ -180,7 +180,7 @@ class urlshortr extends main
          //make DBAL call
          $checkVars = ['urlid' => $urlID];
 //         die(var_dump($checkVars));
-        $vars_array = $this->_validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate    
+        $vars_array = $this->validatePayload($checkVars, $this->_sql_elements['bind_vars'], TRUE); //will throw exception if it fails to validate
         $result = $this->run_sql($vars_array, 'return_outvar');
         return $result;           
     }    

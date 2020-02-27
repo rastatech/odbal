@@ -56,7 +56,7 @@ class modelbase extends main implements model_interface
      * @param array $model  Needed for compatibility with the library, not used here
      * @return mixed-array  the SQL element Bind Vars
      */
-    protected function _validatePayload(array $input_parameter_array, array $model = [])
+    protected function validatePayload(array $input_parameter_array, array $model = [])
     {
         $config = HTMLPurifier_Config::createDefault();
         $this->_html_purifier = new HTMLPurifier($config);
@@ -64,7 +64,7 @@ class modelbase extends main implements model_interface
             $purifiedvalue = $this->_html_purifier->purify($value);
             $purified_payload[$key] = $purifiedvalue;
         }      
-       return parent::_validatePayload($purified_payload, $this->_sql_elements['bind_vars']);
+       return parent::validatePayload($purified_payload, $this->_sql_elements['bind_vars']);
     }  
     
     /**
