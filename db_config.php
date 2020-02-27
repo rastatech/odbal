@@ -21,7 +21,7 @@ $configs = [    'cursor'    => ['out_cursor'	=> FALSE, //false for Function / pr
                                 'pw'        => '',
                                 'cnx_str'   => '',
                                 //regex for identifying an oracle connection string:
-                                'cnx_regex' => '#\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SERVICE_NAME\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)|\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SID\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)#i',
+                                'cnx_regex' => '#\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SERVICE_NAME\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)|\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+)\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SID\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)#i',
                 ],
                 'statement' => [ 'sql' 	=> '', //fully qualified, e.g. LWB.WWTSPF.p_PermitNfo
                                 //types of query the class understands:
