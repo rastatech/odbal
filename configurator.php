@@ -10,6 +10,26 @@ namespace rastatech\odbal;
 trait configurator
 {
     /**
+     * @param string  $path2iniFile the full path to the configuration file
+     * @return array|false
+     */
+    public function get_configsFile($path2iniFile = NULL){
+//        die(var_export($path2iniFile, TRUE));
+        //use whatever is set in the Main class, or its descendants/implementations, unless we are given a specific value
+//        $configs_path = $this->ci->get('odbal')['configs_path'] . $this->ci->get('odbal')['configs_file'];//one way of getting stuff from the Dependency Injection Container
+//        $configs_path = ($path2iniFile) ? $path2iniFile : (($this->configs_path) ? ((is_array($this->configs_path)) ? $this->configs_path['configs_path'] . $this->configs_path['configs_file'] : $this->configs_path) : $this->ci->get('odbal')['configs_path'] . $this->ci->get('odbal')['configs_file']);
+        $configs_path = ($path2iniFile) ? (is_array($path2iniFile)) ? $path2iniFile['configs_path'] . $path2iniFile['configs_file'] :
+                                                (($this->configs_path) ? ((is_array($this->configs_path)) ? ($this->configs_path['configs_path'] . $this->configs_path['configs_file']) : $this->configs_path) :
+                                                    ($this->ci->get('odbal')['configs_path'] . $this->ci->get('odbal')['configs_file'])) : $path2iniFile;
+//        die(var_export($configs_path, TRUE));
+        if( ! is_file($configs_path)){
+            throw new Exception('Missing ODBAL configuration file at ' . $configs_path);
+        }
+        $dbconfigs = parse_ini_file($configs_path);
+        return $dbconfigs;
+    }
+
+    /**
      * merges the various sources of configuration information
      *
      * @param string-array $model_sql_elements  the array of _sql_elements from the model

@@ -36,6 +36,7 @@ trait payload
      * @todo debug this thoroughly as it's not being used right now and probably should be
      */
     public function validatePayload(array $payload, array $model){
+//        return $payload;
         $payload_keys = array_keys($payload);
         $model_keys = array_keys($model);
         foreach($model_keys as $key){

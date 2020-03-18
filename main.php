@@ -4,7 +4,7 @@ use \Exception;
 
 /**
  *
- * Simplified Oracle database driver specifically for NMED purposes.
+ * Simplified Oracle database driver specifically for Package execution purposes.
  * 
  *
  * This driverlet is designed specifically to our heavy use of PL/SQL packages.
@@ -26,6 +26,12 @@ use \Exception;
  */
 class main
 {
+    /**
+     * @var string path to your configurations file;
+     * defaults to the one in this same directory, but you can overwrite with your own, just be sure to use all the same array keys...
+     */
+    public $configs_path = 'db_configs.ini';
+
     /**
      *
      * @var Container_object    the Dependency Injection Container  
@@ -94,6 +100,10 @@ class main
     public function __construct($ci, $cnx_flavor = NULL)
     {
         $this->ci = $ci; //establish the container object; currently used for the DB configs only, but anything we need from the routes or anyplace we can get from here
+        if( ! $this->ci['odbal_configs']){
+            $this->ci['odbal_configs'] = $this->get_configsFile( $this->ci->get('odbal'));
+        }
+//        die(var_export($this->ci['odbal_configs'], TRUE));
         $this->connect($cnx_flavor);//uses magic __call to abstract the connection process
     }
 
@@ -169,7 +179,7 @@ class main
     }
 
     /**
-     * Magic __call function to handle abstracted object access
+     * Magic __call function as a means to simplify what would otherwise be numerous duplicatively-parametered functions
      *
      * Use this function to give \odbal\main (and objects that extend it) access to dependent objects, e.g. the connection, statement or bindings objects
      * the *_sql_elements* attribute comes from the models that extend this class
@@ -236,23 +246,20 @@ class main
                 $return = NULL;
                 break;
             case 'cleanup':
-                $cleanStatement = $this->statementObj->clean_up_after();
-                $cleanConnection = $this->connectionObj->clean_up_after();
-                $return = (( ! $cleanStatement) OR ( ! $cleanConnection)) ? FALSE : TRUE;
+                $return = (( ! $this->statementObj->clean_up_after()) OR ( ! $this->connectionObj->clean_up_after())) ? FALSE : TRUE;
                 break;
-            case 'validate':
+            case 'validate'://changed the visibility of this method back & forth a coupla times
+            case '_validatePayload'://changed the visibility of this method back & forth a coupla times
                 if ($arguments){//arguments in this case are the payload to validate, and the model to validate against.
                     if(count($arguments != 2)){
-                        throw new Exception("you must supply a payload and a model to main::validate for it to function.");
+                        throw new Exception("you must supply a payload and a model to validatePayload.");
                     }
-                    $payload2validate = $arguments[0];
-                    $model2validatevs = $arguments[1];
-                    $return = $this->validatePayload($payload2validate,  $model2validatevs);
+                    $return = $this->validatePayload($arguments[0],  $arguments[1]);
                 }
                 break;
             default:
                 throw new Exception("the $name function is not supported");
         }
-        return $return;
+        return isset($return) ? $return : NULL;
     }
 }

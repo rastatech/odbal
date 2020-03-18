@@ -2,7 +2,6 @@
 
 namespace rastatech\odbal;
 
-use \ArrayObject;
 use \Exception;
 
 /**
@@ -40,47 +39,10 @@ class bindings
     public $vars2bind = array();
 
     /**
-     * the single or array of cursor objects for binding
-     *
-     * @var mixed-array associative array of varname2bindVS => bound value
-     */
-    public $cursors2bind = array();
-
-    /**
-     * @var string-array    the array of keys used in defining attributes for OUT parameter binding
-     */
-    protected $_compound_value_keys = array('length' => NULL, 'type' => NULL, 'value' => NULL);
-
-    /**
      * @var string-array    the array of regexes to use to parse for arrayed paramter bind types; trickier than it sounds....
+     *      comes from the .ini file for improvement....
      */
-    protected $_regexes = ['float' => '@-?\d+\.?\d*[eE][- +]\d+@',
-                            'num' => '@^-?\d+\.\d*$@',
-                            'int' => '@^-?\d+$@',
-                            'date' => '@(((\d{2}-[A-Z]{3}-\d{2})|(\d{2}/\d{2}/\d{2}(?:\d{2})?)|(\d{4}[-.]\d{2}[-.]\d{2})))+@'
-                            ];
-
-    /**
-     * @var array array of allowed PHP-OCI8 bind types for arrays and scalars
-     *            SQLT_NUM - for arrays of NUMBER.
-     *   SQLT_INT - for arrays of INTEGER (Note: INTEGER it is actually a synonym for NUMBER(38), but SQLT_NUM type won't work in this case even though they are synonyms).
-     *              Sure why not?
-     *   SQLT_FLT - for arrays of FLOAT. Yes, I think
-     *   SQLT_AFC - for arrays of CHAR. Nah.
-     *   SQLT_CHR - for arrays of VARCHAR2. Yes
-     *   SQLT_VCS - for arrays of VARCHAR. Nah.
-     *   SQLT_AVC - for arrays of CHARZ. Nah.
-     *   SQLT_STR - for arrays of STRING. Nah.
-     *   SQLT_LVC - for arrays of LONG VARCHAR. Nah.
-     *   SQLT_ODT - for arrays of DATE.  Yes.
-     *
-     *   SQLT_NUM  Converts the PHP parameter to a 'C' long type, and binds to that value. Untested.
-     *   SQLT_CHR and any other type    Converts the PHP parameter to a string type and binds as a string.
-     *      This is the default for OUT vars since other types do not seem to bind correctly.
-     */
-    protected $_allowed_bindTypes = ['in_arrays' => ['SQLT_INT', 'SQLT_FLT', 'SQLT_CHR', 'SQLT_ODT'],
-                                    'outvars'   => ['SQLT_CHR', 'SQLT_NUM']
-                                    ];
+    protected $_type_regexes = [];
 
     /**
      * Configuration loading Trait
@@ -91,6 +53,11 @@ class bindings
      * some factored-out-for-length payload handling code in the form of a Trait
      */
     use payload;
+
+    /**
+     * some factored-out-for-length type parsing code in the form of a Traitrecur
+     */
+    use bindtype;
 
     /**
      *
@@ -122,6 +89,7 @@ class bindings
     {
         if ($bind_var_array) {
             foreach ($bind_var_array as $key2bind => $value2bind) {
+//                echo "testing $key2bind:<br/>\n";
                 $this->vars2bind[$key2bind] = $value2bind;
             }
             $return = (!$stmt) ? $this->vars2bind : $this->_bindVars2SQL($stmt, $sqlType);
@@ -170,14 +138,14 @@ class bindings
             throw new Exception('no valid OCI statement received in _bind_pkg', 520);
         }
         $b = array();
-        foreach ($this->vars2bind as $bind_var => $bind_value) {
-            $this->bound_vars[$bind_var] = $bind_value;
+        foreach ($this->vars2bind as $bind_varname => $bind_value) {
+            $this->bound_vars[$bind_varname] = $bind_value;
 //            //dynamically add a public class attribute by which to access the bound var:
-//            echo "testing bound_vars in odbal bindings $bind_var: " . var_export(  $this->bound_vars[$bind_var], TRUE) . "<br/>\n";
-            $this->$bind_var = ((is_array($bind_value)) AND (array_key_exists('value', $bind_value))) ? $bind_value['value'] : $bind_value;
-            $b[$bind_var] = $this->_bind_pkg_parameter($stmt, $bind_var, $bind_value);
+//            echo "testing bound_vars in odbal bindings $bind_varname: " . var_export(  $this->bound_vars[$bind_varname], TRUE) . "<br/>\n";
+            $this->$bind_varname = ((is_array($bind_value)) AND (array_key_exists('value', $bind_value))) ? $bind_value['value'] : $bind_value;
+            $b[$bind_varname] = $this->_bind_pkg_parameter($stmt, $bind_varname, $bind_value);
         }
-//        die(var_export($b, TRUE));
+//        die("dying on _bind_pkg: " . var_export($b, TRUE));
         return $b;
     }
 
@@ -218,259 +186,63 @@ class bindings
      * Handles variable binding, optionally using length, type parameters, and handling arrayed variables with oci_bind_array_by_name
      *
      * @param statement $stmt       the Oracle statement object
-     * @param string                    $bind_var   the variable name to bind
+     * @param string                    $bind_varname   the variable name to bind
      * @param array                     $bind_value the value of the variable to bind, in this case a compound array of length, type, value (if any)
      * @return array the bound variable
      * @throws Exception
      */
-    protected function _bind_pkg_parameter($stmt, $bind_var, $bind_value)
+    protected function _bind_pkg_parameter($stmt, $bind_varname, $bind_value)
     {
+//        die(var_export($bind_varname, TRUE));
         $placeholder = [];
-        $placeholder[$bind_var] = ":$bind_var";
-        $is_outvar = $this->_is_outVar($bind_var);
-        $this->$bind_var = $bind_value;
+        $placeholder[$bind_varname] = ":$bind_varname";
+        $is_outvar = $this->_is_outVar($bind_varname);
         if($is_outvar){//test for out/return var-ness
             $binding_info = $this->_parse_4compoundAttribs($bind_value);
-            $this->$bind_var = $binding_info['value'];
+            $this->$bind_varname = $binding_info['value'];
             //only need set length & type for OUT params:
-            $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_var], $this->$bind_var, $binding_info['length'], $binding_info['type']);
+            $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname, $binding_info['length'], $binding_info['type']);
         }
-        elseif (is_array($bind_value)){//test for arrayed value-ness
+        elseif (is_array($bind_value)){//test for arrayed value-ness;
+//             echo "$bind_varname is array param! <br/>\n";
             $binding_info = $this->_parse4arrayINparam($bind_value);
+//            $binding_info = $this->_parse_4compoundAttribs($bind_value);
 //            echo "parsing array variable for bind: <br/>\n";
+//            echo "parsing $bind_varname array variable for bind:" . var_export( $binding_info, TRUE) . "<br/>\n";
 //            die(var_export($binding_info, TRUE));
-            if((array_key_exists('value', $binding_info)) AND ($binding_info['value'] != $this->$bind_var)){
+            if((array_key_exists('value', $binding_info)) AND ($binding_info['value'] != $this->$bind_varname)){
 //                echo "value key exists :" . var_export( $binding_info, TRUE) . "<br/>\n";
-                $this->$bind_var = $binding_info['value']; //provide a means to fix positive exponents in floats that Slim turns into spaces from the parameter
+                $this->$bind_varname = $binding_info['value']; //provide a means to fix positive exponents in floats that Slim turns into spaces from the parameter
             }
-//            echo "testing $bind_var :" . var_export( $this->$bind_var, TRUE) . "<br/>\n";
-            $boundVar = oci_bind_array_by_name($stmt, $placeholder[$bind_var], $this->$bind_var, $binding_info["length"]['max_table_length'], $binding_info["length"]['max_item_length'], $binding_info['type']);
+//            echo "array bind_var of $bind_varname :" . var_export( $this->$bind_varname, TRUE) . "<br/>\n";
+            $boundVar = oci_bind_array_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname, $binding_info["length"]['max_table_length'], $binding_info["length"]['max_item_length'], $binding_info['type']);
         }
         else{ //otherwise it's a normal IN param; act accordingly:
-            $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_var], $this->$bind_var); //let oracle decide length and type for IN parameters
+            $this->$bind_varname = $bind_value;
+//            echo "NOT array var $bind_varname :" . var_export( $this->$bind_varname, TRUE) . "<br/>\n";
+            $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname); //let oracle decide length and type for IN parameters
         }
         if ($o_err = oci_error($stmt)) {
-            $this->_throwBindingError($o_err, $bind_var, 'Oracle bind by name failed!', 523);
+            $this->_throwBindingError($o_err, $bind_varname, 'Oracle bind by name failed!', 523);
         }
         return $boundVar;
-    }
-
-    /**
-     * gets the needed binding attributes for an arrayed value
-     *
-     * @param $bind_valueArray the bound array variable, which should obviously be an array
-     * @return mixed
-     * @throws Exception
-     */
-    protected function _parse4arrayINparam($bind_valueArray)
-    {
-//        die(var_export($bind_valueArray, TRUE));
-//        $binding_info = $this->_parse_4compoundAttribs($bind_valueArray);
-//         echo "parse in param array: <br/>\n";
-//        die(var_export($binding_info, TRUE));
-//        die(var_export($bind_valueArray, TRUE));
-//        echo "processing bind_value:" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
-        if(array_key_exists('value', $bind_valueArray)){
-//            echo "_parse4arrayINparam array :" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
-            $parsedAttributes['type'] = $this->_getSQLTtype($bind_valueArray['type'],FALSE);
-//            $parsedAttributes['type'] =  constant( $bind_valueArray['type']);
-            $parsedAttributes['length']['max_table_length'] = 10;
-            $parsedAttributes['length']['max_item_length'] = -1;
-            $parsedAttributes['value'] = $bind_valueArray['value'];
-//            echo "testing expression :" . var_export( $parsedAttributes, TRUE) . "<br/>\n";
-            return $parsedAttributes;
-        }
-//        echo "processing non-array bind_value:" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
-        $length_info['max_table_length'] = count($bind_valueArray);
-        $length_info['max_item_length'] = -1; //let oci figure out the longest individual item itself
-        $parsedAttributes['length'] = $length_info;
-        $parsedAttributes = $this->_parse_bindVar_4type($bind_valueArray, $parsedAttributes);
-        return  $parsedAttributes;
-    }
-
-    /**
-     *  Tests the bind variable name vs the configs to see if it contains an OUT variable or function return variable suffix
-     *
-     *
-     * @param $bind_var
-     * @return bool
-     */
-    protected function _is_outVar($bind_var)
-    {
-        $outVar_suffixes = $this->ci->configs['out_params'];
-        $funcRet_suffixes = $this->ci->configs['function_return_params'];
-        $check_suffixes = array_merge($outVar_suffixes, $funcRet_suffixes);
-//        var_dump($check_suffixes);
-        foreach ($check_suffixes as $out_param_suffix) {
-            if(strpos($bind_var, $out_param_suffix) !== FALSE){
-                return TRUE;
-            }
-        }
     }
 
     /**
      *  Abstraction of Oracle error capture process & associated Exception throwing
      *
      * @param $o_err    Oracle_Error_Object
-     * @param $bind_var string  the name of the failed variable
+     * @param $bind_varname string  the name of the failed variable
      * @param $message_preamble string  the message for the Exception
      * @param $code integer the Exception code
      * @throws Exception
      */
-    protected function _throwBindingError($o_err, $bind_var, $message_preamble, $code)
+    protected function _throwBindingError($o_err, $bind_varname, $message_preamble, $code)
     {
-        $err = $o_err['message'] . ';<br/>' . $bind_var . '<br/>' . 'SQL was: ' . $o_err['sqltext'] . '<br/>';
+        $err = $o_err['message'] . ';<br/>' . $bind_varname . '<br/>' . 'SQL was: ' . $o_err['sqltext'] . '<br/>';
         $message = preg_replace('~[[:cntrl:]]~', '', $err);
         $this->ci['errorMessage'] = $message;
         $this->ci['errorCode'] = htmlentities($o_err['code']);
         throw new Exception($message_preamble, $code);
-    }
-
-    /**
-     * parses the value of the identified OUT or function return param for the needed binding attributes:
-     * - length
-     * - type
-     * - value (always NULL for OUT params)
-     *
-     * @param $bind_value
-     * @return array the binding attributes needed
-     * @throws Exception
-     */
-    protected function _parse_4compoundAttribs($bind_value)
-    {
-        $parsedAttributes = $this->_compound_value_keys;
-        $parsedKeys = array_keys($parsedAttributes);
-        foreach ($parsedKeys as $key){
-            $parsedAttributes[$key] = $this->_parseCompoundValues($bind_value,$key);
-            if($parsedAttributes[$key] === FALSE){
-                throw new Exception('Parameter name indicates an OUT var or function return. You must provide [length, type, value] array.');
-            }
-        }
-        return $parsedAttributes;
-    }
-
-
-    /**
-     * parses arrayed values for compound values;  a compund value is in this format: `$key2bind = ['length' = 250, 'type' => 'chr', 'value' => '']; type must correspond to one of the
-     * valid OCI datatypes ($this->_allowed_bindTypes) , or an abbreviation of same where you just leave off the "SQLT_" part and that'll get filled in for you. OR the correct Numeric
-     * equivalent of the SQLT_* constant will work also.
-     *
-     * @param  array    $bind_value   the compound value to process
-     * @param  string    $key          the bind_var being processed
-     * @param bool $outvar  whether the variable to be processed is an OUT var; makes a difference for binding....
-     * @return bool|int|mixed mixed-array|bool the processed binding attributes for the value if the compound value was successfully processed, FALSE if otherwise
-     * @throws Exception
-     */
-    protected function _parseCompoundValues($bind_value, $key, $outvar = TRUE)
-    {
-        if ((is_array($bind_value)) AND  (array_key_exists($key,$bind_value))){//compound values should tell us what to set for each parameter
-            switch ($key){
-                case "type":
-                    $parsedKey = $this->_getSQLTtype($bind_value[$key], $outvar);
-                    break;
-                case "length":
-                    $length = (is_int($bind_value[$key])) ? $bind_value[$key] : (int)$bind_value[$key];
-                    $parsedKey = $length;
-                    break;
-                case "value":
-                    $parsedKey = $bind_value[$key];
-                    break;
-                default:
-                    $parsedKey = FALSE;
-            }
-            return $parsedKey;
-        }
-        return FALSE;
-    }
-
-    protected function _getSQLTtype($bind_type, $outvar)
-    {
-        if($outvar){
-            $parsedKey = constant('SQLT_CHR');
-            return $parsedKey;
-        }
-        if( ! is_numeric($bind_type)){
-            $uc_type = strtoupper($bind_type);
-//            die(var_export($uc_type, TRUE));
-            $currentBindValue = (strpos($uc_type, 'DATE') === 0) ? 'SQLT_ODT' : $uc_type; //ACCOUNT FOR DATES
-//            die(var_export($currentBindValue, TRUE));
-            $type = (strpos($currentBindValue, 'SQLT_') === FALSE) ? 'SQLT_' .$currentBindValue : $currentBindValue; //account for abbreviated var types
-            if(( ! in_array($type, $this->_allowed_bindTypes['outvars'])) AND ( ! in_array($type, $this->_allowed_bindTypes['in_arrays']))){
-                throw new Exception($type . ' is not a valid OCI8 bind type!');
-            }
-//            echo "testing expression type:" . var_export( $type, TRUE) . "<br/>\n";
-            $parsedKey = constant($type);
-            return $parsedKey;
-        }
-        $parsedKey = $bind_type; //assumes a valid numeric constant passed for the SQLT_* type
-        return $parsedKey;
-    }
-    /**
-     * derives the bind key type for oracle array binding purposes
-     *
-     * @param mixed-array     $bind_valueArray    assumes an arrayed bind_value
-     * @param mixed-array     $parsedAttributes      the attributes array
-     * @return long        the calculated or derived value type for binding
-     */
-    protected function _parse_bindVar_4type($bind_valueArray, $parsedAttributes)
-    {
-        $arrObj = new ArrayObject($bind_valueArray);
-        $arrIterator = $arrObj->getIterator();
-        $valueMatches = ['float' => 0,
-                        'num' => 0,
-                        'int' => 0,
-                        'date' => 0,
-                        'varchar' => 0
-                        ];
-        while($arrIterator->valid()) {
-            $current = trim($arrIterator->current(),'"\''); //trim any quotes
-            $matches = 0;
-            foreach ($this->_regexes as $regexkey => $regexPattern){
-                $matching =  preg_match($regexPattern, $current, $matches);
-                if($matching){
-                    switch ($regexkey){
-                        case 'float':
-                            $valueMatches['float']++;
-                            if(strpos($current, ' ')){
-                                $parsedAttributes['value'] = str_replace(' ', '+', $current);
-                            }
-                            break;
-                        case 'num':
-                            $valueMatches['num']++;
-                            break;
-                        case 'int':
-                            $valueMatches['int']++;
-                            break;
-                        case 'date':
-                            $valueMatches['date']++;
-                            break;
-                    }
-                    $matches++;
-                    break;
-                }
-            }
-            if( ! $matches){
-                $valueMatches['varchar']++;
-            }
-            $arrIterator->next();
-        }
-        //hierarchy of types
-        if($valueMatches['varchar']){
-            $parsedAttributes['type'] = SQLT_CHR;
-            return $parsedAttributes;
-        }
-        $numArray = array($valueMatches['float'], $valueMatches['num'], $valueMatches['int']);
-        $hasNumsToo = count(array_filter($numArray));
-        if(( ! $hasNumsToo) AND $valueMatches['date']){
-            $parsedAttributes['type'] = SQLT_ODT;
-            return $parsedAttributes;
-        }
-        if($hasNumsToo){
-            $numType = ($valueMatches['float']) ? SQLT_FLT : (($valueMatches['num']) ? SQLT_NUM : SQLT_INT);
-            $parsedAttributes['type'] = $numType;
-            return $parsedAttributes;
-        }
-        $parsedAttributes['type'] = SQLT_CHR; //could be both dates and numbers, but nothing outside of that, in which case VarChar2...
-        return $parsedAttributes;
     }
 }

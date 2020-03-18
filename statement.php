@@ -34,12 +34,12 @@ class statement
      *
      * @var string-array array of regexes for determining the type of sql statement to process differentially
      * currently ONLY the following types of SQL statement are supported:
-     * -packaged procedure or function call; fully qualified package name only
-     * -packaged procedure or function call; verbose (complete) package call
-     * -SELECT pass-thru query
-     * -DELETE pass-thru query
-     * -UPDATE pass-thru query
-     * -INSERT pass-thru query
+     * -packaged procedure or function call; fully qualified package name only if no parameters
+     * -packaged procedure or function call; fully qualified, verbose (complete) package call with binding placeholders
+     * -SELECT pass-thru query (not tested)
+     * -DELETE pass-thru query (not tested)
+     * -UPDATE pass-thru query (not tested)
+     * -INSERT pass-thru query (not tested)
      * @see $_sqlType
      * @see config/database.php
      */

@@ -15,13 +15,18 @@ namespace rastatech\odbal;
  * @version 2.1
  * @todo this whole dbal might need to be moved in namespace to accomodate MySQL dbal if/when we make one of those
  */
+//
+return ['nope, still the old one!'];
 $configs = [    'cursor'    => ['out_cursor'	=> FALSE, //false for Function / procedure calls with no OUT CURSOR, true or an array or cursor names otherwise
                 ],
                 'connection' => ['user'     => '',
                                 'pw'        => '',
                                 'cnx_str'   => '',
                                 //regex for identifying an oracle connection string:
-                                'cnx_regex' => '#\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SERVICE_NAME\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)|\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+)\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SID\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)#i',
+//                                'cnx_regex' => '#\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SERVICE_NAME\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)|\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SID\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)#i', //WORKS FOR DOT-NOTATED
+//                                'cnx_regex' => '#\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SERVICE_NAME\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)|\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+)\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SID\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)#i', //WORKS FOR NON-DOT-NOTATED
+//                                'cnx_regex' => '#\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SERVICE_NAME\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)|\(DESCRIPTION\s?=\s?\(ADDRESS_LIST\s?=\s?\(ADDRESS\s?=\s?\(PROTOCOL\s?=\s?\w{3}\)\(HOST\s?=\s?(\w+\.?)+\w{2,4}\)\(PORT\s?=\s?(\d{4})\)\)\)\(CONNECT_DATA\s?=\s?\(SID\s?=\s?\w{2,30}(\w+\.\w+\.\w+)*\)\)\)#i', //works for both
+                                'cnx_regex' => '', //DEPENDS ON .ini file providing the value
                 ],
                 'statement' => [ 'sql' 	=> '', //fully qualified, e.g. LWB.WWTSPF.p_PermitNfo
                                 //types of query the class understands:

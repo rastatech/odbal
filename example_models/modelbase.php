@@ -9,6 +9,7 @@ namespace models;
  *
  */
 
+use Exception;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 use rastatech\odbal\main;
@@ -40,6 +41,7 @@ class modelbase extends main implements model_interface
         $this->_special_query_parameters['function_return_params'] = $ci->configs_array['function_return_params'];
         parent::__construct($ci);
     }
+
     /**
      * Override of parent function allows us to do stuff in between if we need to
      */
@@ -48,13 +50,14 @@ class modelbase extends main implements model_interface
         //invoke parent for actual package execution:
         return parent::run_sql($bindVars, $outvar);
     }
-    
+
     /**
      * input cleansing for parameters
-     * 
+     *
      * @param array $input_parameter_array
-     * @param array $model  Needed for compatibility with the library, not used here
-     * @return mixed-array  the SQL element Bind Vars
+     * @param array $model Needed for compatibility with the library, not used here
+     * @return array mixed-array  the SQL element Bind Vars
+     * @throws Exception
      */
     protected function validatePayload(array $input_parameter_array, array $model = [])
     {
@@ -65,18 +68,18 @@ class modelbase extends main implements model_interface
             $purified_payload[$key] = $purifiedvalue;
         }      
        return parent::validatePayload($purified_payload, $this->_sql_elements['bind_vars']);
-    }  
-    
+    }
+
     /**
      * Creates the string used to execute a package; just a placeholder since this needs to happen at the specific DB type model (e.g. Oracle)
      * and since we need this to fulfill the obligations of the model_interface
-     * 
+     *
      * @param Request $request
-     * @param Response $response
+     * @param Container $DIcontainer
+     * @return void|mixed-array $_sql_elements array the SQL elements needed by the ODBAL for execution
      * @uses _parse_args_4execution
      * @uses _create_bindVarsString_4execution
-     * @return mixed-array $_sql_elements array the SQL elements needed by the ODBAL for execution
-     */    
+     */
     public function create_packageCall($request, $DIcontainer) //I suggest $DIcontainer = NULL in implementation to give you flexibility & save RAM
     {
        
