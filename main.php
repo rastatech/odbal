@@ -103,7 +103,6 @@ class main
         if( ! $this->ci['odbal_configs']){
             $this->ci['odbal_configs'] = $this->get_configsFile( $this->ci->get('odbal'));
         }
-//        die(var_export($this->ci['odbal_configs'], TRUE));
         $this->connect($cnx_flavor);//uses magic __call to abstract the connection process
     }
 

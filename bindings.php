@@ -89,7 +89,6 @@ class bindings
     {
         if ($bind_var_array) {
             foreach ($bind_var_array as $key2bind => $value2bind) {
-//                echo "testing $key2bind:<br/>\n";
                 $this->vars2bind[$key2bind] = $value2bind;
             }
             $return = (!$stmt) ? $this->vars2bind : $this->_bindVars2SQL($stmt, $sqlType);
@@ -141,11 +140,9 @@ class bindings
         foreach ($this->vars2bind as $bind_varname => $bind_value) {
             $this->bound_vars[$bind_varname] = $bind_value;
 //            //dynamically add a public class attribute by which to access the bound var:
-//            echo "testing bound_vars in odbal bindings $bind_varname: " . var_export(  $this->bound_vars[$bind_varname], TRUE) . "<br/>\n";
             $this->$bind_varname = ((is_array($bind_value)) AND (array_key_exists('value', $bind_value))) ? $bind_value['value'] : $bind_value;
             $b[$bind_varname] = $this->_bind_pkg_parameter($stmt, $bind_varname, $bind_value);
         }
-//        die("dying on _bind_pkg: " . var_export($b, TRUE));
         return $b;
     }
 
@@ -193,7 +190,6 @@ class bindings
      */
     protected function _bind_pkg_parameter($stmt, $bind_varname, $bind_value)
     {
-//        die(var_export($bind_varname, TRUE));
         $placeholder = [];
         $placeholder[$bind_varname] = ":$bind_varname";
         $is_outvar = $this->_is_outVar($bind_varname);
@@ -204,22 +200,14 @@ class bindings
             $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname, $binding_info['length'], $binding_info['type']);
         }
         elseif (is_array($bind_value)){//test for arrayed value-ness;
-//             echo "$bind_varname is array param! <br/>\n";
             $binding_info = $this->_parse4arrayINparam($bind_value);
-//            $binding_info = $this->_parse_4compoundAttribs($bind_value);
-//            echo "parsing array variable for bind: <br/>\n";
-//            echo "parsing $bind_varname array variable for bind:" . var_export( $binding_info, TRUE) . "<br/>\n";
-//            die(var_export($binding_info, TRUE));
             if((array_key_exists('value', $binding_info)) AND ($binding_info['value'] != $this->$bind_varname)){
-//                echo "value key exists :" . var_export( $binding_info, TRUE) . "<br/>\n";
                 $this->$bind_varname = $binding_info['value']; //provide a means to fix positive exponents in floats that Slim turns into spaces from the parameter
             }
-//            echo "array bind_var of $bind_varname :" . var_export( $this->$bind_varname, TRUE) . "<br/>\n";
             $boundVar = oci_bind_array_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname, $binding_info["length"]['max_table_length'], $binding_info["length"]['max_item_length'], $binding_info['type']);
         }
         else{ //otherwise it's a normal IN param; act accordingly:
             $this->$bind_varname = $bind_value;
-//            echo "NOT array var $bind_varname :" . var_export( $this->$bind_varname, TRUE) . "<br/>\n";
             $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname); //let oracle decide length and type for IN parameters
         }
         if ($o_err = oci_error($stmt)) {

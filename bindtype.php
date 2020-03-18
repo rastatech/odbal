@@ -48,20 +48,14 @@ trait bindtype
     protected function _parse4arrayINparam($bind_valueArray)
     {
         if(array_key_exists('value', $bind_valueArray)){
-//            echo "_parse4arrayINparam array :" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
             $parsedAttributes['type'] = $this->_getSQLTtype($bind_valueArray['type'],FALSE);
-//            $parsedAttributes['type'] =  constant( $bind_valueArray['type']);
             $parsedAttributes['length']['max_table_length'] = ( count($bind_valueArray['value'])) ? count($bind_valueArray['value']) : 1;
             $parsedAttributes['length']['max_item_length'] = -1;
-//            $parsedAttributes['value'] = ( count($bind_valueArray['value'])) ? $bind_valueArray['value'] : NULL;
             $parsedAttributes['value'] = $bind_valueArray['value'];
-//            echo "testing parse4arrayINparam  :" . var_export( $parsedAttributes, TRUE) . "<br/>\n";
             return $parsedAttributes;
         }
-//        echo "processing non-array bind_value:" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
-//        $length_info['max_table_length'] = count($bind_valueArray);
         $length_info['max_table_length'] = ( count($bind_valueArray)) ? count($bind_valueArray) : 1;
-        $length_info['max_item_length'] = -1; //let oci figure out the longest individual item itself
+        $length_info['max_item_length'] = ( count($bind_valueArray)) ? -1 : 0; //let oci figure out the longest individual item itself unless it's an empty array
         $parsedAttributes['length'] = $length_info;
         if( count($bind_valueArray)){
             $parsedAttributes = $this->_parse_bindVar_4type($bind_valueArray, $parsedAttributes);
@@ -70,8 +64,6 @@ trait bindtype
             $parsedAttributes['type'] =  constant('SQLT_CHR');
         }
         $parsedAttributes['value'] = $bind_valueArray;
-//        echo "testing parse4arrayINparam missing value key:" . var_export( $parsedAttributes, TRUE) . "<br/>\n";
-//        die();
         return  $parsedAttributes;
     }
 
@@ -100,9 +92,7 @@ trait bindtype
             if(($parsedAttributes[$key] === FALSE) AND ($outvar)){
                 throw new Exception('Parameter name indicates an OUT var or function return. You must provide [length, type, value] array.');
             }
-//            unset($parsedAttributes[$key]);
         }
-//        echo "parsed for compound value:" . var_export( $parsedAttributes, TRUE) . "<br/>\n";
         return ($parsedAttributes) ? $parsedAttributes : FALSE;
     }
 
@@ -134,7 +124,6 @@ trait bindtype
                         $parsedKey = $bind_value[$key];
                         break;
                     }
-//                    $parsedKey = $bind_value[$key]; ############## NEED TO DO PARSING ON VALUES FOR BIND FOR IN PARAMETERS
                     $this->_parse4arrayINparam($bind_value[$key]);
                     break;
                 default:
@@ -161,14 +150,11 @@ trait bindtype
         }
         if( ! is_numeric($bind_type)){
             $uc_type = strtoupper($bind_type);
-//            die(var_export($uc_type, TRUE));
             $currentBindValue = (strpos($uc_type, 'DATE') === 0) ? 'SQLT_ODT' : $uc_type; //ACCOUNT FOR DATES
-//            die(var_export($currentBindValue, TRUE));
             $type = (strpos($currentBindValue, 'SQLT_') === FALSE) ? 'SQLT_' .$currentBindValue : $currentBindValue; //account for abbreviated var types
             if(( ! in_array($type, $this->_allowed_bindTypes['outvars'])) AND ( ! in_array($type, $this->_allowed_bindTypes['in_arrays']))){
                 throw new Exception($type . ' is not a valid OCI8 bind type!');
             }
-//            echo "testing expression type:" . var_export( $type, TRUE) . "<br/>\n";
             $parsedKey = constant($type);
             return $parsedKey;
         }
@@ -223,12 +209,9 @@ trait bindtype
      */
     protected function _iterate_bindTypes($arrIterator, $valueMatches)
     {
-//         echo "odbal configs: <br/>\n";
-//        die(var_export( $this->ci['odbal_configs'], TRUE));
         while($arrIterator->valid()) {
             $current = trim($arrIterator->current(),'"\''); //trim any quotes
             $matches = 0;
-//            die("iterate bindtypes :" . var_export($this->_type_regexes, TRUE));
             foreach ($this->_type_regexes as $regexkey => $regexPattern){
                 $matching =  preg_match($regexPattern, $current, $matches);
                 if($matching){
@@ -270,11 +253,9 @@ trait bindtype
      */
     protected function _is_outVar($bind_var)
     {
-//        $outVar_suffixes = $this->ci->configs;
         $outVar_suffixes = $this->ci->configs['out_params'];
         $funcRet_suffixes = $this->ci->configs['function_return_params'];
         $check_suffixes = array_merge($outVar_suffixes, $funcRet_suffixes);
-//        var_dump($check_suffixes);
         foreach ($check_suffixes as $out_param_suffix) {
             if(strpos($bind_var, $out_param_suffix) !== FALSE){
                 return TRUE;

@@ -120,8 +120,6 @@ class statement
      */
     protected function _match_sqlType()
     {
-//        var_dump($this->sql);
-//        echo "is the bloody SQL at the statement object match type<br/>";
         if(is_array($this->__sqltypes)){
             foreach($this->__sqltypes as $type => $regex2checkvs){
                 $pattern = '@' . $regex2checkvs . '@is'; //delimit pattern & make case-insensitive
@@ -146,7 +144,6 @@ class statement
      */
     public function execute_statement($outcursor_obj = FALSE)
     {
-//        echo "executing outcursor? " . (($outcursor_obj) ? 'true!' : 'false.');
         if(( ! $outcursor_obj) OR (($outcursor_obj->out_cursor) AND ( ! is_array($outcursor_obj->out_cursor)))){
             $executeOn = ( ! $outcursor_obj) ? $this->stmt : $outcursor_obj->out_cursor;
             $success = $this->_safe_execute($executeOn);
@@ -177,7 +174,6 @@ class statement
     {
         try {
             $success = oci_execute($executeOn);
-//            echo ($success) ? "execute succeeded" : 'execute failed';
         }
         catch (exception $e) {
             $e = oci_error($this->stmt);

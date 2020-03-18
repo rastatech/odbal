@@ -58,7 +58,6 @@ class result
     {
         $this->ci = $ci;
         if($atomic_result){
-//            $this->$atomic_result = $this->ci->$atomic_result;
             if( ! is_array($atomic_result)){
                 $this->$atomic_result = $atomic_result;
             }
