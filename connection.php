@@ -116,7 +116,7 @@ class connection
                 throw new Exception('Oracle connection failed!',516);
             }
         }
-        return $this->conn; 
+        return $this->conn;
     }
     
     /**

@@ -10,14 +10,14 @@ use odbal\main;
  * @subpackage example_models
  * @author todd.hochman
  */
-class urlshortr extends main
+class example_model extends main
 {
     /**
      *
      * @var sting-array the array of SQL elements organized by Stored Procedure
      */
      protected $_base_sql_elements = [  
-            'put_url' =>    ['sql' => 'BEGIN :return_outvar := URL_SHORTS.URL_SHORTR.puturl(:origurl, :shorturl); END;',
+            'put_url' =>    ['sql' => 'BEGIN :return_outvar := example_schema.example_pkg.puturl(:origurl, :shorturl); END;',
                         'bind_vars' 	=> array(
                                                     'origurl' => NULL,
                                                     'shorturl' => NULL,
@@ -25,39 +25,39 @@ class urlshortr extends main
                                                     ),
                         'out_cursor'	=> NULL
                         ],
-            'get_url' =>    ['sql' => 'BEGIN URL_SHORTS.URL_SHORTR.geturl(:shorturl,:origurl_outvar); END;',
+            'get_url' =>    ['sql' => 'BEGIN example_schema.example_pkg.geturl(:shorturl,:origurl_outvar); END;',
                             'bind_vars' 	=> array(
                                                         'shorturl' => NULL,
                                                         'origurl_outvar' => ['length' => 2000, 'type' => 'chr', 'value' => NULL]
                                                         ),
                             'out_cursor'	=> NULL
                         ],
-            'check_short' => ['sql' => 'BEGIN :return_outvar := URL_SHORTS.URL_SHORTR.checkShort(:shorturl); END;',
+            'check_short' => ['sql' => 'BEGIN :return_outvar := example_schema.example_pkg.checkShort(:shorturl); END;',
                             'bind_vars' 	=> array(
                                                         'shorturl' => NULL,
                                                         'return_outvar' => ['length' => 8, 'type' => 'int', 'value' => NULL]
                                                         ),
                             'out_cursor'	=> NULL
                         ],
-            'check_url' => ['sql' => 'BEGIN :return_outvar := URL_SHORTS.URL_SHORTR.checkurl(:url); END;',
+            'check_url' => ['sql' => 'BEGIN :return_outvar := example_schema.example_pkg.checkurl(:url); END;',
                             'bind_vars' 	=> array(
                                                         'url' => NULL,
                                                         'return_outvar' => ['length' => 8, 'type' => 'int', 'value' => NULL]
                                                         ),
                             'out_cursor'	=> NULL
                         ],         
-            'get_urlList' => ['sql' => 'BEGIN URL_SHORTS.URL_SHORTR.get_urlList(:return_outcur); END;',
+            'get_urlList' => ['sql' => 'BEGIN example_schema.example_pkg.get_urlList(:return_outcur); END;',
                             'bind_vars' 	=> array(),
                             'out_cursor'	=> 'return_outcur'                                    
                         ],
-            'get_urlbyid' => ['sql' => 'BEGIN :return_outvar := URL_SHORTS.URL_SHORTR.geturlbyid(:urlid); END;',
+            'get_urlbyid' => ['sql' => 'BEGIN :return_outvar := example_schema.example_pkg.geturlbyid(:urlid); END;',
                             'bind_vars' 	=> array(
                                                         'urlid' => NULL,
                                                         'return_outvar' => ['length' => 2000, 'type' => 'chr', 'value' => NULL]
                                                         ),
                             'out_cursor'	=> NULL
                         ],     
-            'get_shortbyid' => ['sql' => 'BEGIN :return_outvar := URL_SHORTS.URL_SHORTR.getshortbyid(:urlid); END;',
+            'get_shortbyid' => ['sql' => 'BEGIN :return_outvar := example_schema.example_pkg.getshortbyid(:urlid); END;',
                             'bind_vars' 	=> array(
                                                         'urlid' => NULL,
                                                         'return_outvar' => ['length' => 2000, 'type' => 'chr', 'value' => NULL]

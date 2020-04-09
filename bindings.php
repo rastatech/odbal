@@ -8,6 +8,7 @@ use \Exception;
  * Abstraction of the Oracle variable binding process and related functionality for better maintainability/readability
  *
  * Refactored 2019.10.30 to handle arrayed parameters for Oracle Table types or VARRAYs
+ * Refactored 2020.04.08 to BETTER handle arrayed parameters, including empty arrays and arrays with NULL values, as well as support for Named Types and for Oracle Table types or VARRAYs
  *
  * @package    \ODBAL
  * @author     todd.hochman
@@ -55,12 +56,21 @@ class bindings
     use payload;
 
     /**
-     * some factored-out-for-length type parsing code in the form of a Traitrecur
+     * some factored-out-for-length type parsing code in the form of a Trait
      */
     use bindtype;
 
     /**
-     *
+     * some factored-out-for-length length parsing code in the form of a Trait
+     */
+    use bindlength;
+
+    /**
+     * some factored-out-for-length value parsing code in the form of a Trait
+     */
+    use bindvalue;
+
+    /**
      * @param mixed-array $model_sql_elements    associative array of varname2bindVS => bound value, or false if you'd rather do that separately
      */
     public function __construct($ci, $model_sql_elements = FALSE)
@@ -99,6 +109,7 @@ class bindings
 
     /**
      * Determines the SQL type and passes off the actual variable binding to the appropriate method for binding.
+     *
      * Only one method (for packages) is supported currently, but this method is designed to support pass-thru SQL when that is added, if ever
      *
      * @param         $stmt
@@ -119,7 +130,8 @@ class bindings
     }
 
     /**
-     * Iterates through the variable array and binds them to the statement
+     * Iterates through the Oracle function or procedure variable array and binds them to the statement
+     *
      * This function also will assign each key/ value pair to a dynamically-created public class attribute,
      * so you can reference those variables from outside the class - like say if you have a function that returns a string or integer,
      * or other non-cursor OUT parameters from a procedure.
@@ -137,11 +149,13 @@ class bindings
             throw new Exception('no valid OCI statement received in _bind_pkg', 520);
         }
         $b = array();
+//        die(var_export($this->vars2bind, TRUE));
         foreach ($this->vars2bind as $bind_varname => $bind_value) {
             $this->bound_vars[$bind_varname] = $bind_value;
 //            //dynamically add a public class attribute by which to access the bound var:
             $this->$bind_varname = ((is_array($bind_value)) AND (array_key_exists('value', $bind_value))) ? $bind_value['value'] : $bind_value;
-            $b[$bind_varname] = $this->_bind_pkg_parameter($stmt, $bind_varname, $bind_value);
+//            $b[$bind_varname] = $this->_bind_pkg_parameter($stmt, $bind_varname, $bind_value);
+            $b[$bind_varname] = $this->_bind_package_parameter($stmt, $bind_varname, $bind_value);
         }
         return $b;
     }
@@ -181,8 +195,9 @@ class bindings
 
     /**
      * Handles variable binding, optionally using length, type parameters, and handling arrayed variables with oci_bind_array_by_name
+     * #####################    OBSOLETE #########################################
      *
-     * @param statement $stmt       the Oracle statement object
+     * @param statement                 $stmt       the Oracle statement object
      * @param string                    $bind_varname   the variable name to bind
      * @param array                     $bind_value the value of the variable to bind, in this case a compound array of length, type, value (if any)
      * @return array the bound variable
@@ -200,10 +215,22 @@ class bindings
             $boundVar = oci_bind_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname, $binding_info['length'], $binding_info['type']);
         }
         elseif (is_array($bind_value)){//test for arrayed value-ness;
-            $binding_info = $this->_parse4arrayINparam($bind_value);
+            $binding_info = $this->_OBS_parse4arrayINparam($bind_value);
+            if($this->_test_4_null_values($binding_info)){
+
+            }
             if((array_key_exists('value', $binding_info)) AND ($binding_info['value'] != $this->$bind_varname)){
                 $this->$bind_varname = $binding_info['value']; //provide a means to fix positive exponents in floats that Slim turns into spaces from the parameter
             }
+//            echo "about to bind array  $bind_varname:" . var_export( $binding_info, TRUE) . "<br/>\n";
+            //kluge for testing:
+            foreach ($this->$bind_varname as $index => $item) {
+                if(is_null($item)){
+                    $x = 1;
+                }
+            }
+
+            //end kluge
             $boundVar = oci_bind_array_by_name($stmt, $placeholder[$bind_varname], $this->$bind_varname, $binding_info["length"]['max_table_length'], $binding_info["length"]['max_item_length'], $binding_info['type']);
         }
         else{ //otherwise it's a normal IN param; act accordingly:
@@ -215,6 +242,10 @@ class bindings
         }
         return $boundVar;
     }
+ #####################    OBSOLETE #########################################
+ #####################    OBSOLETE #########################################
+
+
 
     /**
      *  Abstraction of Oracle error capture process & associated Exception throwing
@@ -233,4 +264,156 @@ class bindings
         $this->ci['errorCode'] = htmlentities($o_err['code']);
         throw new Exception($message_preamble, $code);
     }
+
+    /**
+     * Handles variable binding (new version 2020.04.04!)
+     *
+     * branches on scalar variables vs. arrayed parameters, and simple arrays vs. compound (length, type, value) arrays
+     *
+     * @param statement $stmt         the Oracle statement object
+     * @param string    $bind_varname the variable name to bind
+     * @param array     $bind_value   the value of the variable to bind, in this case a compound array of length, type, value (if any)
+     * @return bool     TRUE for bind success, FALSE for bind failure
+     * @throws Exception
+     * @link https://github.com/php/php-src/tree/master/ext/oci8/tests all the best documentation for bind_array_by_name and oci_collection are in these docs
+     */
+    protected function _bind_package_parameter($stmt, $bind_varname, $bind_value)
+    {
+        echo "processing $bind_varname: <br/>\n";
+        $var_bind_placeholder = ":$bind_varname";
+        if(is_array($bind_value)){//treat arrayed values differently
+            $is_outvar = $this->_is_outVar($bind_varname);
+            if($is_outvar){//treat OUT variables differently especially as they must be compound values
+                 echo "$bind_varname is an OUT var... <br/>\n";
+                $binding_info = $this->_process_outvar($bind_value);
+                $this->$bind_varname = $binding_info['value']; //this allows direct access to the OUT variable as a class variable
+                //only need set length & type for OUT params:
+                return $this->_bind_value($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
+            }
+            if($this->_is_compoundVar($bind_value)){//treat compound IN values differently
+                echo "$bind_varname is a compound IN var... <br/>\n";
+                $binding_info = $this->_process_compound_array($bind_value, FALSE);
+                $this->$bind_varname = $binding_info['value']; //assigned to class variable out of convenience
+                return $this->_bind_value($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
+            }
+            echo "$bind_varname is an array var... <br/>\n";
+            $binding_info['value'] = $this->$bind_varname = $this->_handle_array_value($bind_value);  //assigned to class variable out of convenience
+            $binding_info['type'] = $this->_determine_SQLT_type($binding_info, FALSE); //get type
+            $binding_info['length'] = $this->_determine_length(FALSE, $binding_info['value']);//get length
+            return $this->_bind_value($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
+        }
+        echo "$bind_varname is a regular scalar var... <br/>\n";
+        $this->$bind_varname = $bind_value;
+        return $this->_bind_scalar_value($stmt, $bind_varname, $var_bind_placeholder);
+    }
+
+    /**
+     * implements OCI bind_by_name to bind the scalar variable to the statement
+     *
+     * @param statement $stmt                 the Oracle statement object
+     * @param string    $bind_varname         the variable name to bind
+     * @param string    $var_bind_placeholder the placeholder string
+     * @param null|integer      $bind_length    the length of the scalar variable to bind (optional)
+     * @param null|integer      $bind_type      the type of the scalar variable to bind (optional)
+     * @return bool     TRUE for bind success, FALSE for bind failure
+     * @throws Exception
+     */
+    protected function _bind_scalar_value($stmt, $bind_varname, $var_bind_placeholder, $bind_length = NULL, $bind_type = NULL)
+    {
+        if(( ! $bind_length) AND ( !  $bind_type)){
+            $boundVar = oci_bind_by_name($stmt, $var_bind_placeholder, $this->$bind_varname); //let oracle decide length and type for normal IN parameters
+        }
+        else{
+//            echo "testing bind_length :" . var_export( $bind_length, TRUE) . "<br/>\n";
+            $boundVar = oci_bind_by_name($stmt, $var_bind_placeholder, $this->$bind_varname, $bind_length, $bind_type);//typically OUT parameters need type &/or length defined
+        }
+        if ($o_err = oci_error($stmt)) {
+            $this->_throwBindingError($o_err, $bind_varname, 'Oracle bind by name failed!', 523);
+        }
+        return $boundVar;
+    }
+
+    /**
+     * uses oci_bind_array_by_name to bind the arrayed variable
+     *
+     * @param statement $stmt                 the Oracle statement object
+     * @param string    $bind_varname         the variable name to bind
+     * @param string    $var_bind_placeholder the placeholder string
+     * @param  array    $bind_info              the array of bind info; length, type, value
+     * @return bool     TRUE on bind success, FALSE on failure
+     * @throws Exception
+     */
+    protected function _bind_arrayed_value($stmt, $bind_varname, $var_bind_placeholder, $bind_info)
+    {
+        //check this vs the docu
+//        die(var_export($bind_info, TRUE));
+        $t_length = $bind_info['length']['max_table_length'];
+        $i_length = $bind_info['length']['max_item_length'];
+        $type = $bind_info['type'];
+         echo "about to bind $bind_varname; maxTlength is $t_length and maxIlength is $i_length and type is $type and value is " . var_export($this->$bind_varname, TRUE) . "  <br/>\n";
+        $boundVar = oci_bind_array_by_name($stmt, $var_bind_placeholder, $this->$bind_varname, $t_length, $i_length, $type);
+        if ($o_err = oci_error($stmt)) {
+            $this->_throwBindingError($o_err, $bind_info, 'Oracle bind by name failed!', 523);
+        }
+        return $boundVar;
+    }
+
+    /**
+     * processes the binding of values
+     *
+     * includes arrayed values, null values in arrays, empty arrays and custom collection handling
+     *
+     * @param statement $stmt                 the Oracle statement object
+     * @param string    $bind_varname         the variable name to bind
+     * @param string $var_bind_placeholder the placeholder string
+     * @param array  $bind_info            the array of bind info; length, type, value
+     * @return bool TRUE on bind success, FALSE on failure
+     * @throws Exception
+     */
+    protected function _bind_value($stmt, $bind_varname, $var_bind_placeholder, $bind_info)
+    {
+        if(is_array($bind_info['value'])){//treat arrayed values differently
+            $custom_type = $this->_check_4_customType($bind_info); //should support custom declared types in the form of schema.type
+            if(is_array($custom_type)){
+                return $this->_bind_collection($stmt,$bind_info['value'],  $bind_varname, $var_bind_placeholder, $custom_type);
+            }
+            if($this->_check_4nulls($bind_info['value'])){//treat arrayed values with a NULL value or an empty array differently
+                $bind_info['value'] = $this->_handle_null_values($bind_info);
+            }//bind the array without nulls, the easy way:
+//            return $this->_bind_array_nonulls($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
+            return $this->_bind_arrayed_value($stmt, $bind_varname, $var_bind_placeholder, $bind_info);
+        }
+        return $this->_bind_scalar_value($stmt, $bind_varname, $var_bind_placeholder, $bind_info['length'], $bind_info['type']);
+    }
+
+    /**
+     * binds custom collection types
+     *
+     * @param $stmt
+     * @param $bind_value
+     * @param $bind_varname
+     * @param $var_bind_placeholder
+     * @param $schema_and_type
+     * @return void
+     * @throws Exception
+     */
+    protected function _bind_collection($stmt, $bind_value, $bind_varname, $var_bind_placeholder, $schema_and_type)
+    {
+        die(var_export($bind_varname, TRUE) . ' wants to be a collection...?' . var_export($bind_value));
+//        echo "dying on binding container connection: <br/>\n";
+//        die(var_dump($this->ci->get('conn')));
+        // Create an OCI-Collection object
+        $collection = oci_new_collection($this->ci->conn,$schema_and_type[1],  $schema_and_type[0]);
+        foreach ($bind_value as $array_item){
+            $collection->append($array_item);
+        }
+        $this->$bind_value = $collection; //re-assign the class attribute for retrieval; I *think* this will work....
+        // Bind the collection to the parameter
+        $boundvar = oci_bind_by_name($stmt,$var_bind_placeholder, $this->$bind_value,-1,OCI_B_SQLT_NTY);
+        if ($o_err = oci_error($stmt)) {
+            $this->_throwBindingError($o_err, $bind_varname, 'Oracle bind collection failed!', 525);
+        }
+    }
+
+
 }

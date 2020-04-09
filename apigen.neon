@@ -18,13 +18,10 @@ charset:
 tree: Yes
 debug: Yes
 sourceCode: Yes
-# Wipe out the destination directory first
-wipeout: Yes
 # Source file or directory to parse
 source:
-        - src/
-        - models/
-        - controllers/
+        - example_models/
+        - ./
 # Directory where to save the generated documentation
-destination: docs/
+destination: /home/env/documentation/odbal/
 title: Oracle DataBase Abstraction Layer

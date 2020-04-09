@@ -196,6 +196,13 @@ class main
                 //arguments in this case is the type of connection desired; defaults to standard which is also =0; 1 is a new connection; 2 is a permanent connection:
                 $connectFlavor = (($arguments) AND (array_key_exists(0, $arguments)) AND (is_int($arguments[0])) AND ($arguments[0] < 3)) ? $arguments[0] : NULL;
                 $return = $this->connectionObj->connect_2db($connectFlavor);
+                $this->ci['conn'] = $this->connectionObj->conn; //added klugily to container as I ended up needing it to bind in certain circumstances
+//                echo "dying on container connection: <br/>\n";
+//                echo "dying on assigned connection: <br/>\n";
+//                echo "dying on raw connection: <br/>\n";
+//                die(var_export($this->connectionObj->conn, TRUE));
+//                die(var_dump($return));
+//                die(var_dump($this->ci->get('conn')));
                 break;
             case 'parse':
                 $this->statementObj = ( ! $this->statementObj) ? new statement($this->ci, $this->_sql_elements) : $this->statementObj;
