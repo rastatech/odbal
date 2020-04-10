@@ -3,7 +3,6 @@
 
 namespace rastatech\odbal;
 use \ArrayObject;
-use Cassandra\Exception\TruncateException;
 use Exception;
 use Iterator;
 
@@ -63,28 +62,22 @@ trait bindtype
      */
     protected function _getSQLTtype($bind_type, $outvar)
     {
-//        $is_outvar = ($outvar) ? 'outvar' : 'not outvar';
-//         echo "processing bind type of $bind_type as $is_outvar: <br/>\n";
         if($outvar){
-            $parsedKey = constant('SQLT_CHR'); //it does not freaking work otherwise, no matter what the underlying datatype, trust me.....
-            return $parsedKey;
+            return constant('SQLT_CHR'); //it does not freaking work otherwise, no matter what the underlying datatype, trust me.....
         }
         if( ! is_numeric($bind_type)){
             $uc_type = strtoupper($bind_type);
             $currentBindValue = (strpos($uc_type, 'DATE') === 0) ? 'SQLT_ODT' : $uc_type; //ACCOUNT FOR DATES
             $type = (strpos($currentBindValue, 'SQLT_') === FALSE) ? 'SQLT_' .$currentBindValue : $currentBindValue; //account for abbreviated var types
             if(( ! in_array($type, $this->_allowed_bindTypes['outvars'])) AND ( ! in_array($type, $this->_allowed_bindTypes['in_arrays']))){
-                //put OCI-Collection handling here; assumes schema.type
-                if(strpos($bind_type, '.')){
+                if(strpos($bind_type, '.')){//for custom OCI-Collection handling here; assumes schema.type:
                     return $type;
                 }
                 throw new Exception($type . ' is not a valid OCI8 bind type!');
             }
-            $parsedKey = constant($type);
-            return $parsedKey;
+            return constant($type);
         }
-        $parsedKey = $bind_type; //assumes a valid numeric constant passed for the SQLT_* type
-        return $parsedKey;
+        return $bind_type; //assumes a valid numeric constant passed for the SQLT_* type
     }
 
     /**
@@ -93,7 +86,7 @@ trait bindtype
      * @uses _iterate_bindTypes()
      * @param mixed-array     $bind_valueArray    assumes an arrayed bind_value
      * @param mixed-array     $parsedAttributes      the attributes array
-     * @return long        the calculated or derived value type for binding
+     * @return int        the calculated or derived value type for binding
      *
      */
     protected function _derive_bindVar_type($bind_valueArray)
@@ -108,18 +101,11 @@ trait bindtype
                         ];
         $valueMatches = $this->_iterate_bindTypes($arrIterator, $valueMatches);
         //hierarchy of types
-        if($valueMatches['varchar']){
-            return SQLT_CHR;
-        }
+        if($valueMatches['varchar']) return SQLT_CHR;
         $numArray = array($valueMatches['float'], $valueMatches['num'], $valueMatches['int']);
         $hasNumsToo = count(array_filter($numArray));
-        if(( ! $hasNumsToo) AND $valueMatches['date']){
-            return SQLT_ODT;
-        }
-        if($hasNumsToo){
-            $numType = ($valueMatches['float']) ? SQLT_FLT : (($valueMatches['num']) ? SQLT_NUM : SQLT_INT);
-            return $numType;
-        }
+        if(( ! $hasNumsToo) AND $valueMatches['date']) return SQLT_ODT;
+        if($hasNumsToo) return ($valueMatches['float']) ? SQLT_FLT : (($valueMatches['num']) ? SQLT_NUM : SQLT_INT);
         //could be both dates and numbers, but nothing outside of that, in which case VarChar2...
         return SQLT_CHR;
     }
@@ -136,7 +122,6 @@ trait bindtype
         while($arrIterator->valid()) {
             $current = trim($arrIterator->current(),'"\''); //trim any quotes
             $matches = 0;
-//             echo "iterating $current: <br/>\n";
             foreach ($this->_type_regexes as $regexkey => $regexPattern){
                 $matching =  preg_match($regexPattern, $current, $matches);
                 if($matching){
@@ -191,7 +176,7 @@ trait bindtype
     }
 
     /**
-     * processes an OUT parameter;
+     * Processes an OUT parameter;
      *
      * same as a compound IN parameter, with the addition of throwing an exception if the compound value structure is not found
      *
@@ -208,41 +193,33 @@ trait bindtype
     }
 
     /**
-     * branches between two different methods of obtaining the bind type
+     * Branches between two different methods of obtaining the bind type
      *
      * @param  array $bind_info the array of bind information, length, type, value
      * @param  bool $is_outvar whether the variable is an OUT var or not - needed for exception handling
-     * @return int|long the SQLT_ constant
+     * @return int the SQLT_ constant
      * @throws Exception
      */
     protected function _determine_SQLT_type($bind_info, $is_outvar)
     {
         if((array_key_exists('type', $bind_info)) AND ($bind_info['type'])){
-//            return $this->_getSQLTtype($bind_info['type'], $is_outvar);
-            $type =  $this->_getSQLTtype($bind_info['type'], $is_outvar);
-//            echo "testing given type:" . var_export( $type, TRUE) . "<br/>\n";
-            return $type;
+            return $this->_getSQLTtype($bind_info['type'], $is_outvar);
         }
-//        return $this->_derive_bindVar_type($bind_info['value']);
-        $type =   $this->_derive_bindVar_type($bind_info['value']);
-//        echo "testing derived type:" . var_export( $type, TRUE) . "<br/>\n";
-        return $type;
+        return $this->_derive_bindVar_type($bind_info['value']);
     }
 
     /**
-     * parses type for a 'schema.type' construction indicating a custom type & therefore the need for an OCI8 Collection object
+     * Parses type for a 'schema.type' construction indicating a custom type & therefore the need for an OCI8 Collection object
      *
      * @param array $binding_info the array of bind info; length, type, value
-     * @return array|bool either schema & type if a custom type provided, or FALSE
+     * @return array|bool either array of schema & type if a custom type provided, or FALSE
      */
     protected function _check_4_customType($binding_info)
     {
         //parse $type for schema
         if(strpos($binding_info['type'], '.')){
-            $schema_and_type = explode('.', $binding_info['type']);
-            return $schema_and_type;
+            return explode('.', $binding_info['type']);
         }
         return FALSE;
     }
-
 }

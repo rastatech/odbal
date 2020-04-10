@@ -25,7 +25,6 @@ trait bindlength
      */
     protected function _determine_length($bind_info, $is_compound = FALSE)
     {
-//        echo "testing  _determine_length :" . var_export( $length, TRUE) . "<br/>\n";
         if(is_array($bind_info['value'])){
             if($is_compound){
                 if( ! $bind_info['length']){
@@ -56,18 +55,14 @@ trait bindlength
         if($this->_check_4nulls($arrayed_value)){
             $max_length = 0;
             foreach ($arrayed_value as $array_item) {
-                try {
-                    $item_length = strlen($array_item);
-                    $max_length = ($item_length > $max_length) ? $item_length : $max_length;
-                }
-                catch (exception $e) {
-                    //code to handle the exception
-                    echo "wee problem here, laddie! " . $e->getMessage();
-                }
+                $item_length = strlen($array_item);
+                $max_length = ($item_length > $max_length) ? $item_length : $max_length;
             }
         }
+        //count the items for table length unless an empty array, in which case the docs seem to indicate it must be 1
         $length_info['max_table_length'] = ( count($arrayed_value)) ? count($arrayed_value) : 1;
-        $length_info['max_item_length'] = ( count($arrayed_value)) ? ((! isset($max_length)) ? -1 : $max_length) : 1; //let oci figure out the longest individual item itself unless it's an empty array, in which case the docs seem to indicate in must be 1
+        //let oci figure out the longest individual item itself, unless it's an empty array, in which case the docs seem to indicate it must be 1:
+        $length_info['max_item_length'] = ( count($arrayed_value)) ? ((! isset($max_length)) ? -1 : $max_length) : 1;
         return $length_info;
     }
 }

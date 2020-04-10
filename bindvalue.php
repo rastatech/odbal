@@ -2,7 +2,6 @@
 namespace rastatech\odbal;
 
 use OCI_Collection;
-use ReflectionException;
 
 /**
  * Trait bindvalue; abstraction of value-related functionality for OCI8 binding
@@ -37,7 +36,7 @@ trait bindvalue
     }
 
     /**
-     * process a compound array for length, type, value
+     * Processes a compound array for length, type, value
      *
      * @param      $bind_value
      * @param bool $outvar
@@ -46,8 +45,7 @@ trait bindvalue
      */
     protected function _process_compound_array($bind_value, $outvar = TRUE)
     {
-//        echo "testing bind value :" . var_export( $bind_value, TRUE) . "<br/>\n";
-        //should combine _parse_4compoundAttribs & _parseCompoundValues, & leverage new methods for type & length & value processing
+        $parsedAttributes = [];
         foreach ((array_keys($this->_compound_value_keys)) as $key){
             $isCompoundValue = $this->_process_compound_value($bind_value,$key, $outvar);
             if($isCompoundValue !== FALSE){
@@ -59,7 +57,6 @@ trait bindvalue
             }
         }
         //if any of the compound values are present (i.e. length, type, value), it's a valid compound array; otherwise no.
-//        echo "testing compound processing :" . var_export( $parsedAttributes, TRUE) . "<br/>\n";
         return (array_filter(array_values($parsedAttributes))) ? $parsedAttributes : FALSE;
     }
 
@@ -88,7 +85,6 @@ trait bindvalue
                 $parsedKey = FALSE;
         }
         return isset($parsedKey) ? ($parsedKey) : FALSE;
-        return FALSE;
     }
 
     /**
@@ -116,8 +112,7 @@ trait bindvalue
     protected function _handle_array_value($bind_value)
     {
         if(is_array($bind_value)){
-//            return $this->_homogenize_array_value($bind_value);
-            $parsedAttributes['value'] = $this->_handle_arrayedValues_wnulls($bind_value);
+           return $this->_handle_arrayedValues_wnulls($bind_value);
         }
         return $bind_value;
     }
@@ -127,10 +122,10 @@ trait bindvalue
      *
      * currently doing nothing but returning the value, since I could not get arrays with NULL items among their contents to bind successfully in any scenario
      *
-     * @param array $binding_info the array of bind info; (length, type, value)
+     * @param array $bind_value the arrayed value
      * @return array the bind_value
      */
-    protected function _handle_arrayedValues_wnulls($binding_info)
+    protected function _handle_arrayedValues_wnulls($bind_value)
     {
 //        if((is_array($binding_info['value'])) AND ($binding_info['type'] == SQLT_ODT)){
 //        if(is_array($binding_info['value'])){
@@ -155,7 +150,7 @@ trait bindvalue
 //                }
 //            }
 //        }
-        return $binding_info['value'];
+        return $bind_value;
     }
 
     /**
