@@ -1,6 +1,9 @@
 <?php
 namespace rastatech\odbal;
 
+use OCI_Collection;
+use ReflectionException;
+
 /**
  * Trait bindvalue; abstraction of value-related functionality for OCI8 binding
  *
@@ -63,11 +66,12 @@ trait bindvalue
     /**
      * Processes the compound value array element; length, type, value
      *
-     * @param array $bind_info the array of oci_bind information needed -- length, type, value are the keys
-     * @param  string  $key the bind info key being processed
-     * @param bool $outvar  whether this compound value is an OUT var or not (IN var)
+     * @param array  $bind_info the array of oci_bind information needed -- length, type, value are the keys
+     * @param string $key       the bind info key being processed
+     * @param bool   $outvar    whether this compound value is an OUT var or not (IN var)
      * @return bool|int|long|mixed|array|void   the result of the processing operation; varies
      * @throws Exception
+     * @throws ReflectionException
      */
     protected function _process_compound_value($bind_info, $key, $outvar = TRUE)
     {
@@ -76,7 +80,7 @@ trait bindvalue
                 $parsedKey = $this->_determine_SQLT_type($bind_info, $outvar);
                 break;
             case "length":
-                $parsedKey = $this->_determine_length($bind_info[$key], $bind_info['value'], TRUE);
+                $parsedKey = $this->_determine_length($bind_info,TRUE);
                 break;
             case "value":
                 $parsedKey = $this->_handle_array_value($bind_info[$key]);
@@ -104,42 +108,77 @@ trait bindvalue
         return FALSE;
     }
 
-
     /**
      * Abstraction of massaging functions for Arrayed values
      *
      * @param array|mixed $bind_value the bind value
      * @return array|mixed the massaged array or the original scalar value
+     * @throws ReflectionException
      */
     protected function _handle_array_value($bind_value)
     {
         if(is_array($bind_value)){
-            return $this->_homogenize_array_value($bind_value);
+//            return $this->_homogenize_array_value($bind_value);
+            $parsedAttributes['value'] = $this->_handle_arrayedValues_wnulls($bind_value);
         }
         return $bind_value;
     }
 
     /**
-     * tweaks empty arrays so that Oracle can bind them
+     * Abstraction of null handling so we can be flexible depending on what the testing looks like
      *
-     * @param array  $arrayed_value the arrayed value to homogenize
-     * @return array the Oracle-homogenized array
+     * currently doing nothing but returning the value, since I could not get arrays with NULL items among their contents to bind successfully in any scenario
+     *
+     * @param array $binding_info the array of bind info; (length, type, value)
+     * @return array the bind_value
      */
-    protected function _homogenize_array_value($arrayed_value)
+    protected function _handle_arrayedValues_wnulls($binding_info)
     {
-        return $arrayed_value;
-//        return (is_array($arrayed_value)) ? (count($arrayed_value)) ? $arrayed_value : [0 => NULL] : $arrayed_value; //NULL variation; try both
-//        return (is_array($arrayed_value)) ? ((count($arrayed_value)) ? $arrayed_value : [0 => '']) : $arrayed_value;//empty string variation;
+//        if((is_array($binding_info['value'])) AND ($binding_info['type'] == SQLT_ODT)){
+//        if(is_array($binding_info['value'])){
+////            $refl_class = new \ReflectionClass (__CLASS__);
+////            $constants = array_flip($refl_class->getConstants());
+////            $constants = get_defined_constants();
+////            die(var_export($constants, TRUE));
+////            $binding_info['type'] = $constants[$binding_info['type']];
+////            $binding_info['type'] = 'SQLT_ODT';
+////             echo "doing a date array!: <br/>\n";
+////            $binding_info['value'] = $this->_create_collection($binding_info);
+//            foreach ($binding_info['value'] as $array_index => $array_item) {
+//                if(is_null($array_item)){
+//                     echo "found a null! FIxing...: <br/>\n";
+////                    $binding_info['value'][$array_index] = 'null';
+////                    $binding_info['value'][$array_index] = 'NULL';
+////                    $binding_info['value'][$array_index] = '';
+////                    $binding_info['value'][$array_index] = "";
+////                    $binding_info['value'][$array_index] = NULL;
+//                    $binding_info['value'][$array_index] = FALSE;
+////                    $binding_info['value'][$array_index] = 0;
+//                }
+//            }
+//        }
+        return $binding_info['value'];
     }
 
     /**
-     * abstraction of null handling so we can be flexible depending on what the testing looks like
+     * creates an oci collection object out of the array and append the array items to that collection
      *
-     * @param array $binding_info the array of bind info; length, type, value
-     * @return mixed
+     * @param array $bind_info the array of bind info; (length, type, value)
+     * @return false|OCI_Collection
      */
-    protected function _handle_null_values($binding_info)
+    protected function _create_collection($bind_info)
     {
-        return $binding_info;
+        // Create an OCI-Collection object
+        if(is_array($bind_info['type'])){
+            $schema_and_type = $bind_info['type'];
+            $collection = oci_new_collection($this->ci->conn,$schema_and_type[1],  $schema_and_type[0]);
+        }
+        else{
+            $collection = oci_new_collection($this->ci->conn,$bind_info['type']);
+        }
+        foreach ($bind_info['value'] as $array_item){
+            $collection->append($array_item);
+        }
+        return $collection; //re-assign the class attribute for retrieval; I *think* this will work....
     }
 }

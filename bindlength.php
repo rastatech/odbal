@@ -17,33 +17,31 @@ trait bindlength
      *
      * handles empty arrays specifically according to what I found in the link below;
      *
-     * @param int|string  $length      a provided length, assumes a numeric
-     * @param mixed|array $value       the value to use for length determination, if needed
-     * @param bool        $is_compound whether or not the value is part of a compoind
+     * @param array     $bind_info  the array of bind info, so we have access to all of it in case circumstances necessitate
+     * @param bool $is_compound whether or not the value is part of a compoind
      * @return int the bind item length
-     * @throws Exception
      * @throws Exception
      * @link https://github.com/php/php-src/tree/master/ext/oci8/tests the OCI tests from the actual PHP source; very illminating
      */
-    protected function _determine_length($length, $value, $is_compound = FALSE)
+    protected function _determine_length($bind_info, $is_compound = FALSE)
     {
 //        echo "testing  _determine_length :" . var_export( $length, TRUE) . "<br/>\n";
-        if(is_array($value)){
+        if(is_array($bind_info['value'])){
             if($is_compound){
-                if( ! $length){
-                    $length_info = $this->_calculate_arrayedValue_length($value);
+                if( ! $bind_info['length']){
+                    $length_info = $this->_calculate_arrayedValue_length($bind_info);
                     return $length_info;
                 }
-                if( ! is_numeric($length)){
+                if( ! is_numeric($bind_info['length'])){
                     throw new Exception('provided length must be a number');
                 }
-                $length = (is_int($length)) ? $length : (int) $length;
+                $length = (is_int($bind_info['length'])) ? $bind_info['length'] : (int) $bind_info['length'];
                 return $length;
             }//raw array:
-            $length_info = $this->_calculate_arrayedValue_length($value);
+            $length_info = $this->_calculate_arrayedValue_length($bind_info);
             return $length_info;
         }//not an array:
-        $length = (is_int($length)) ? $length : (( ! $length ) ? -1  : (int) $length);
+        $length = (is_int($bind_info['length'])) ? $bind_info['length'] : (( ! $bind_info['length'] ) ? -1  : (int) $bind_info['length']);
         return $length;
     }
 
@@ -53,13 +51,27 @@ trait bindlength
      * - max_table_length is either the count of items, or 1 for empty arrays
      * - max_item_length is either -1, which lets Oracle figure it out itself, or 1 for empty arrays
      *
-     * @param array $value the array value for which we want to calculate length
+     * @param array $bind_info
      * @return array    the array of max_table_length and max_item_length
      */
-    protected function _calculate_arrayedValue_length($value)
+    protected function _calculate_arrayedValue_length($bind_info)
     {
-        $length_info['max_table_length'] = ( count($value)) ? count($value) : 1;
-        $length_info['max_item_length'] = ( count($value)) ? -1 : 1; //let oci figure out the longest individual item itself unless it's an empty array, in which case the docs seem to indicate in must be 1
+        $arrayed_value = $bind_info['value'];
+        if($this->_check_4nulls($arrayed_value)){
+            $max_length = 0;
+            foreach ($arrayed_value as $array_item) {
+                try {
+                    $item_length = strlen($array_item);
+                    $max_length = ($item_length > $max_length) ? $item_length : $max_length;
+                }
+                catch (exception $e) {
+                    //code to handle the exception
+                    echo "wee problem here, laddie! " . $e->getMessage();
+                }
+            }
+        }
+        $length_info['max_table_length'] = ( count($arrayed_value)) ? count($arrayed_value) : 1;
+        $length_info['max_item_length'] = ( count($arrayed_value)) ? ((! isset($max_length)) ? -1 : $max_length) : 1; //let oci figure out the longest individual item itself unless it's an empty array, in which case the docs seem to indicate in must be 1
         return $length_info;
     }
 }

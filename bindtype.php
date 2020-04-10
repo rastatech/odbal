@@ -60,7 +60,8 @@ trait bindtype
             $parsedAttributes['type'] = $this->_getSQLTtype($bind_valueArray['type'],FALSE);
             $parsedAttributes['length']['max_table_length'] = ( count($bind_valueArray['value'])) ? count($bind_valueArray['value']) : 1;
             $parsedAttributes['length']['max_item_length'] = -1;
-            $parsedAttributes['value'] = $this->_homogenize_array_value($bind_valueArray['value']);
+//            $parsedAttributes['value'] = $this->_homogenize_array_value($bind_valueArray['value']);
+            $parsedAttributes['value'] = $this->_handle_arrayedValues_wnulls($bind_valueArray);
 //            echo "final parsing of attribute under _parse4arrayINparam compound branch :" . var_export( $parsedAttributes['value'], TRUE) . "<br/>\n";
             return $parsedAttributes;
         }
@@ -74,7 +75,8 @@ trait bindtype
             $parsedAttributes['type'] =  constant('SQLT_CHR');
         }
 //        $parsedAttributes['value'] = (is_array($bind_valueArray)) ? (count($bind_valueArray)) ? $bind_valueArray : [0 => NULL] : $bind_valueArray;
-        $parsedAttributes['value'] = $this->_homogenize_array_value($bind_valueArray);
+//        $parsedAttributes['value'] = $this->_homogenize_array_value($bind_valueArray);
+        $parsedAttributes['value'] = $this->_handle_arrayedValues_wnulls($bind_valueArray);
 //        echo "final parsing of attribute under _parse4arrayINparam raw branch :" . var_export( $parsedAttributes['value'], TRUE) . "<br/>\n";
 
         return  $parsedAttributes;
@@ -295,6 +297,7 @@ trait bindtype
         while($arrIterator->valid()) {
             $current = trim($arrIterator->current(),'"\''); //trim any quotes
             $matches = 0;
+//             echo "iterating $current: <br/>\n";
             foreach ($this->_type_regexes as $regexkey => $regexPattern){
                 $matching =  preg_match($regexPattern, $current, $matches);
                 if($matching){
@@ -320,11 +323,13 @@ trait bindtype
                 }
             }
             if( ! $matches){
-                $valueMatches['varchar']++;
+                if($current){
+                    $valueMatches['varchar']++;
+                }
             }
             $arrIterator->next();
         }
-        return $valueMatches;
+        return (array_filter(array_values($valueMatches))) ? $valueMatches : ++$valueMatches['varchar'];
     }
 
     /**
@@ -348,6 +353,7 @@ trait bindtype
 
     /**
      * processes an OUT parameter;
+     *
      * same as a compound IN parameter, with the addition of throwing an exception if the compound value structure is not found
      *
      * @param $bind_value
@@ -375,12 +381,12 @@ trait bindtype
         if((array_key_exists('type', $bind_info)) AND ($bind_info['type'])){
 //            return $this->_getSQLTtype($bind_info['type'], $is_outvar);
             $type =  $this->_getSQLTtype($bind_info['type'], $is_outvar);
-            echo "testing given type:" . var_export( $type, TRUE) . "<br/>\n";
+//            echo "testing given type:" . var_export( $type, TRUE) . "<br/>\n";
             return $type;
         }
 //        return $this->_derive_bindVar_type($bind_info['value']);
         $type =   $this->_derive_bindVar_type($bind_info['value']);
-        echo "testing derived type:" . var_export( $type, TRUE) . "<br/>\n";
+//        echo "testing derived type:" . var_export( $type, TRUE) . "<br/>\n";
         return $type;
     }
 
