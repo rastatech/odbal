@@ -19,7 +19,7 @@ trait bindlength
      *
      * @param array     $bind_info  the array of bind info, so we have access to all of it in case circumstances necessitate
      * @param bool $is_compound whether or not the value is part of a compoind
-     * @return int the bind item length
+     * @return array|int
      * @throws Exception
      * @link https://github.com/php/php-src/tree/master/ext/oci8/tests the OCI tests from the actual PHP source; very illminating
      */
@@ -29,24 +29,20 @@ trait bindlength
         if(is_array($bind_info['value'])){
             if($is_compound){
                 if( ! $bind_info['length']){
-                    $length_info = $this->_calculate_arrayedValue_length($bind_info);
-                    return $length_info;
+                    return $this->_calculate_arrayedValue_length($bind_info);
                 }
                 if( ! is_numeric($bind_info['length'])){
                     throw new Exception('provided length must be a number');
                 }
-                $length = (is_int($bind_info['length'])) ? $bind_info['length'] : (int) $bind_info['length'];
-                return $length;
+                return (is_int($bind_info['length'])) ? $bind_info['length'] : (int) $bind_info['length'];
             }//raw array:
-            $length_info = $this->_calculate_arrayedValue_length($bind_info);
-            return $length_info;
+            return $this->_calculate_arrayedValue_length($bind_info);
         }//not an array:
-        $length = (is_int($bind_info['length'])) ? $bind_info['length'] : (( ! $bind_info['length'] ) ? -1  : (int) $bind_info['length']);
-        return $length;
+        return (is_int($bind_info['length'])) ? $bind_info['length'] : (( ! $bind_info['length'] ) ? -1  : (int) $bind_info['length']);
     }
 
     /**
-     * calculates the max_table_length and max_item_length for an array value from the value itself
+     * Calculates the max_table_length and max_item_length for an array value from the value itself
      *
      * - max_table_length is either the count of items, or 1 for empty arrays
      * - max_item_length is either -1, which lets Oracle figure it out itself, or 1 for empty arrays

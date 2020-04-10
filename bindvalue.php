@@ -71,7 +71,6 @@ trait bindvalue
      * @param bool   $outvar    whether this compound value is an OUT var or not (IN var)
      * @return bool|int|long|mixed|array|void   the result of the processing operation; varies
      * @throws Exception
-     * @throws ReflectionException
      */
     protected function _process_compound_value($bind_info, $key, $outvar = TRUE)
     {
@@ -113,7 +112,6 @@ trait bindvalue
      *
      * @param array|mixed $bind_value the bind value
      * @return array|mixed the massaged array or the original scalar value
-     * @throws ReflectionException
      */
     protected function _handle_array_value($bind_value)
     {
