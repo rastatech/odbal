@@ -42,6 +42,7 @@ class cursor
         $loadedConfigs = $this->_get_configs($model_sql_elements);
         $this->_assign2classVars($loadedConfigs);
         $this->outcursorName = ((isset($this->out_cursor)) AND ( ! is_null($this->out_cursor))) ? $this->out_cursor : NULL;
+
     }
 
     /**
@@ -53,19 +54,20 @@ class cursor
      */
     public function bind_cursor($stmt)
     {
-        if(is_null($this->outcursorName)){
-            return $this;
-        }
-        if( ! is_array($this->outcursorName)){
+        if( ! is_array($this->outcursorName)){ //this is probably obsolete due to the latest refactor 2020.04.30
             if( ! is_null($this->outcursorName)){
                 $bindCursor =  ':'. $this->outcursorName;
                 $success = oci_bind_by_name($stmt, $bindCursor, $this->out_cursor, -1, SQLT_RSET);
+//                 echo "non-array cursor bound: [$success ]<br/>\n";
             }
+//            echo "cursor is null, no binding happenin': <br/>\n";
+            $success = (isset($success)) ? $success : FALSE;
         }
         else{
             foreach($this->outcursorName as $outcursor_placeholder){
                 if( ! is_null($outcursor_placeholder)){
                     $success[$outcursor_placeholder] = oci_bind_by_name($stmt, ':'. $outcursor_placeholder, $this->out_cursor[$outcursor_placeholder], -1, SQLT_RSET);
+//                    echo "array cursor $outcursor_placeholder bound: [ " . $success[$outcursor_placeholder] ." ]<br/>\n";
                 }
             }
         } 
@@ -104,6 +106,7 @@ class cursor
             $this->ci['errorCode'] = htmlentities($exception['code']);
             throw new Exception('OUT CURSOR creation failed!',529);
         }
+//        die(var_export($this->out_cursor, TRUE));
         return $this;
     }      
 }

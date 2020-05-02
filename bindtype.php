@@ -83,14 +83,13 @@ trait bindtype
     /**
      * Derives the bind key type from sample array values, for oracle array binding purposes
      *
-     * @uses _iterate_bindTypes()
-     * @param mixed-array     $bind_valueArray    assumes an arrayed bind_value
-     * @param mixed-array     $parsedAttributes      the attributes array
+     * @param array $bind_valueArray assumes an arrayed bind_value
      * @return int        the calculated or derived value type for binding
-     *
+     * @uses _iterate_bindTypes()
      */
     protected function _derive_bindVar_type($bind_valueArray)
     {
+//        echo "testing _derive_bindVar_type :" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
         $arrObj = new ArrayObject($bind_valueArray);
         $arrIterator = $arrObj->getIterator();
         $valueMatches = [   'float'     => 0,
@@ -159,8 +158,8 @@ trait bindtype
     /**
      *  Tests the bind variable name vs the configs to see if it contains an OUT variable or function return variable suffix
      *
-     * @param $bind_var
-     * @return bool
+     * @param array $bind_var the arrayed value to check for OUT-var-ness
+     * @return bool whether or not it meets the suffix criteria to qualify as an OUT var
      */
     protected function _is_outVar($bind_var)
     {
@@ -180,14 +179,14 @@ trait bindtype
      *
      * same as a compound IN parameter, with the addition of throwing an exception if the compound value structure is not found
      *
-     * @param $bind_value
-     * @return mixed
+     * @param  array $bind_value the compound OUT parameter
+     * @return array|bool the processed value or FALSE if it fails to meet compound value criteria
      * @throws Exception
      */
     protected function _process_outvar($bind_value)
     {
         if( ! $this->_is_compoundVar($bind_value)){
-            throw new Exception('OUT vars must be a compound (length, type, value) array.');
+            throw new Exception('OUT vars must be a compound (length=,type=,value=) value.');
         }
         return $this->_process_compound_array($bind_value);
     }
@@ -203,7 +202,13 @@ trait bindtype
     protected function _determine_SQLT_type($bind_info, $is_outvar)
     {
         if((array_key_exists('type', $bind_info)) AND ($bind_info['type'])){
-            return $this->_getSQLTtype($bind_info['type'], $is_outvar);
+            $custom_type = $this->_check_4_customType($bind_info);
+            if( ! $custom_type){
+//                $type =  $this->_getSQLTtype($bind_info['type'], $is_outvar);
+//                 echo "$type: <br/>\n";
+                return $this->_getSQLTtype($bind_info['type'], $is_outvar);
+            }
+            return $custom_type;
         }
         return $this->_derive_bindVar_type($bind_info['value']);
     }
@@ -217,9 +222,53 @@ trait bindtype
     protected function _check_4_customType($binding_info)
     {
         //parse $type for schema
-        if(strpos($binding_info['type'], '.')){
-            return explode('.', $binding_info['type']);
+        if( ! is_array($binding_info['type'])){
+            if(strpos($binding_info['type'], '.')){
+                return array_map('strtoupper',  explode('.', $binding_info['type']));
+            }
+            return FALSE;
         }
-        return FALSE;
+        return $binding_info['type'];
+    }
+
+    /**
+     * Leverages the OCI_Collection object to re-jigger arrays with null values as SYS collections and see if we can get them to bind that way
+     *
+     * The following SQL gives you the list of values below:
+     * SELECT * FROM SYS.ALL_TYPES WHERE TYPECODE = 'COLLECTION' AND TYPE_NAME LIKE 'ODCI%'
+     * - ODCICOLVALLIST
+     * - ODCIDATELIST
+     * - ODCIFILTERINFOLIST
+     * - ODCIGRANULELIST
+     * - ODCINUMBERLIST
+     * - ODCIOBJECTLIST
+     * - ODCIORDERBYINFOLIST
+     * - ODCIPARTINFOLIST
+     * - ODCIRAWLIST
+     * - ODCIRIDLIST
+     * - ODCISECOBJTABLE
+     * - ODCIVARCHAR2LIST
+     *
+     * @param array $binding_info the bind_info array
+     * @return array the compound SYS type;
+     * @link https:www.php.net/manual/en/function.oci-new-collection.php
+     */
+    protected function _handle_arrayTypes_wnulls($binding_info)
+    {
+        $type =  ($binding_info['type'] == 'DATE') ? SQLT_ODT : $this->_derive_bindVar_type($binding_info['value']);
+        switch($type){
+            case SQLT_ODT:
+                $bind_type = ['SYS', 'ODCIDATELIST'];
+                break;
+            case SQLT_NUM:
+            case SQLT_INT:
+            case SQLT_FLT:
+                $bind_type = ['SYS', 'ODCINUMBERLIST'];
+                break;
+            case SQLT_CHR:
+            default:
+                $bind_type = ['SYS', 'ODCIVARCHAR2LIST'];
+        }
+        return $bind_type;
     }
 }

@@ -150,6 +150,7 @@ class statement
         }
         elseif(is_array($outcursor_obj->out_cursor)){//handles an array of OUT CURSORs
             foreach($outcursor_obj->out_cursor as $outcursorname => $outcursor){
+//                 echo "executing $outcursorname: <br/>\n";
                 $success[] = $this->_safe_execute($outcursor);
             }
         }
@@ -172,6 +173,7 @@ class statement
      */
     protected function _safe_execute($executeOn)
     {
+
         try {
             $success = oci_execute($executeOn);
         }

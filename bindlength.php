@@ -52,11 +52,18 @@ trait bindlength
     protected function _calculate_arrayedValue_length($bind_info)
     {
         $arrayed_value = $bind_info['value'];
+//       die(var_export($arrayed_value, TRUE));
         if($this->_check_4nulls($arrayed_value)){
             $max_length = 0;
             foreach ($arrayed_value as $array_item) {
-                $item_length = strlen($array_item);
-                $max_length = ($item_length > $max_length) ? $item_length : $max_length;
+                try {
+                    $item_length = strlen($array_item);
+                    $max_length = ($item_length > $max_length) ? $item_length : $max_length;
+                }
+                catch (exception $e) {
+                    //code to handle the exception
+                    echo "wee problem here, laddie! " . $e->getMessage();
+                }
             }
         }
         //count the items for table length unless an empty array, in which case the docs seem to indicate it must be 1

@@ -34,38 +34,38 @@ class main
 
     /**
      *
-     * @var Container_object    the Dependency Injection Container  
+     * @var Container    the Dependency Injection Container
      */
     protected $ci;
         
     /**
     *
-    * @var dbal_cursor	the cursor abstraction object
+    * @var $outcursorObj	the cursor abstraction object
     *
     */    
     public $outcursorObj;
     
     /**
     *
-    * @var Resource the connection resource
+    * @var $connectionObj the connection resource
     */
     public $connectionObj;
     
     /**
     *
-    * @var Resource the statement resource 
+    * @var $statementObj the statement resource
     */
     public $statementObj;
     
     /**
     *
-    * @var dbal_bindings object to abstract the statement binding processes 
+    * @var $bindingsObj object to abstract the statement binding processes
     */
     public $bindingsObj;
     
     /**
      *
-     * @var dbal_result object to abstract the SQL results and whatever we may want to do with them 
+     * @var $resultObj object to abstract the SQL results and whatever we may want to do with them
      */
     public $resultObj;
     
@@ -79,6 +79,12 @@ class main
                                     'sqlType',
                                     'cnx_regex',
                                 );
+    /**
+     *
+     * @var string-array    the array of  variable names/suffixes used to identify Oracle CURSOR parameters
+     */
+    protected $_outCursors = [];
+
 /**
     * some factored-out-for-reuse configuration setting code in the form of a Trait
     */
@@ -119,7 +125,9 @@ class main
     {
         $this->parse();//creates $this->statementObj via __call()
         $this->bind_vars($bindVars);
-        $this->bind_cursor();
+        if($this->_outCursors){
+            $this->bind_cursor();
+        }
         $this->execute();
         $resultArray = ($outvars) ? $this->result($outvars) : $this->result();
         $this->commit();
@@ -197,12 +205,6 @@ class main
                 $connectFlavor = (($arguments) AND (array_key_exists(0, $arguments)) AND (is_int($arguments[0])) AND ($arguments[0] < 3)) ? $arguments[0] : NULL;
                 $return = $this->connectionObj->connect_2db($connectFlavor);
                 $this->ci['conn'] = $this->connectionObj->conn; //added klugily to container as I ended up needing it to bind in certain circumstances
-//                echo "dying on container connection: <br/>\n";
-//                echo "dying on assigned connection: <br/>\n";
-//                echo "dying on raw connection: <br/>\n";
-//                die(var_export($this->connectionObj->conn, TRUE));
-//                die(var_dump($return));
-//                die(var_dump($this->ci->get('conn')));
                 break;
             case 'parse':
                 $this->statementObj = ( ! $this->statementObj) ? new statement($this->ci, $this->_sql_elements) : $this->statementObj;
@@ -219,7 +221,8 @@ class main
                 break;
             case 'bind_cursor':
                 $this->outcursorObj = ( ! $this->outcursorObj) ? new cursor($this->ci, $this->_sql_elements) : $this->outcursorObj;
-                if($this->outCursor){ //uses dynamic __get()
+                if(($this->outCursor)){ //uses dynamic __get()
+//                     echo "testing outcursor :" . var_export( $this->_outCursors , TRUE) . "<br/>\n";
                     $this->outcursorObj->create_cursor($this->conn);
                     return $this->outcursorObj->bind_cursor($this->stmt);
                 }
@@ -227,7 +230,10 @@ class main
                 break;
             case 'execute':
                 $executed = $this->statementObj->execute_statement();//execute the statement
-                $return = ($this->outCursor) ? $this->statementObj->execute_statement($this->outcursorObj): $executed; //execute the OUT CURSOR(s) if any
+                 if($this->outCursor){
+                     $return = $this->statementObj->execute_statement($this->outcursorObj); //execute the OUT CURSOR(s) if any
+                 }
+                $return = (isset($return)) ?$return : $executed; //execute the OUT CURSOR(s) if any
                 break;
             case 'commit':
                 $return = $this->connectionObj->commit();

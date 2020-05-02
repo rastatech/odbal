@@ -38,9 +38,9 @@ trait bindvalue
     /**
      * Processes a compound array for length, type, value
      *
-     * @param      $bind_value
-     * @param bool $outvar
-     * @return array|bool
+     * @param array $bind_value the compound value (length=,type=,value=)
+     * @param bool $outvar whether this compound variable is an OUT parameter or not
+     * @return array    the bind_info (length=,type=,value=)
      * @throws Exception
      */
     protected function _process_compound_array($bind_value, $outvar = TRUE)
@@ -52,12 +52,11 @@ trait bindvalue
                 $parsedAttributes[$key] = $isCompoundValue;
                 continue;
             }
-            if(($parsedAttributes[$key] === FALSE) AND ($outvar)){
-                throw new Exception('Parameter name indicates an OUT var or function return. You must provide [length, type, value] array.');
-            }
+        } //if any of the compound values are present (i.e. length, type, value), it's a valid compound array; otherwise no.
+        if( ! (array_filter(array_values($parsedAttributes)))){
+            throw new Exception('compound vars must provide (length=,type=,value=).');
         }
-        //if any of the compound values are present (i.e. length, type, value), it's a valid compound array; otherwise no.
-        return (array_filter(array_values($parsedAttributes))) ? $parsedAttributes : FALSE;
+        return $parsedAttributes;
     }
 
     /**
@@ -79,7 +78,7 @@ trait bindvalue
                 $parsedKey = $this->_determine_length($bind_info,TRUE);
                 break;
             case "value":
-                $parsedKey = $this->_handle_array_value($bind_info[$key]);
+                $parsedKey = $this->_handle_array_value($bind_info);
                 break;
             default:
                 $parsedKey = FALSE;
@@ -90,7 +89,7 @@ trait bindvalue
     /**
      * Check an array for NULL values
      *
-     * @param $bind_value_array
+     * @param array $bind_value_array the arrayed value to check for NULLs
      * @return bool TRUE if a NULL value was found in the array, FALSE otherwise
      */
     protected function _check_4nulls($bind_value_array)
@@ -106,15 +105,15 @@ trait bindvalue
     /**
      * Abstraction of massaging functions for Arrayed values
      *
-     * @param array|mixed $bind_value the bind value
+     * @param array|mixed $binding_info the bind value
      * @return array|mixed the massaged array or the original scalar value
      */
-    protected function _handle_array_value($bind_value)
+    protected function _handle_array_value($binding_info)
     {
-        if(is_array($bind_value)){
-           return $this->_handle_arrayedValues_wnulls($bind_value);
+        if(is_array($binding_info['value'])){
+           return $this->_handle_arrayedValues_wnulls($binding_info);
         }
-        return $bind_value;
+        return $binding_info['value'];
     }
 
     /**
@@ -122,36 +121,14 @@ trait bindvalue
      *
      * currently doing nothing but returning the value, since I could not get arrays with NULL items among their contents to bind successfully in any scenario
      *
-     * @param array $bind_value the arrayed value
+     * @param array $binding_info the arrayed value
      * @return array the bind_value
      */
-    protected function _handle_arrayedValues_wnulls($bind_value)
+    protected function _handle_arrayedValues_wnulls($binding_info)
     {
-//        if((is_array($binding_info['value'])) AND ($binding_info['type'] == SQLT_ODT)){
-//        if(is_array($binding_info['value'])){
-////            $refl_class = new \ReflectionClass (__CLASS__);
-////            $constants = array_flip($refl_class->getConstants());
-////            $constants = get_defined_constants();
-////            die(var_export($constants, TRUE));
-////            $binding_info['type'] = $constants[$binding_info['type']];
-////            $binding_info['type'] = 'SQLT_ODT';
-////             echo "doing a date array!: <br/>\n";
-////            $binding_info['value'] = $this->_create_collection($binding_info);
-//            foreach ($binding_info['value'] as $array_index => $array_item) {
-//                if(is_null($array_item)){
-//                     echo "found a null! FIxing...: <br/>\n";
-////                    $binding_info['value'][$array_index] = 'null';
-////                    $binding_info['value'][$array_index] = 'NULL';
-////                    $binding_info['value'][$array_index] = '';
-////                    $binding_info['value'][$array_index] = "";
-////                    $binding_info['value'][$array_index] = NULL;
-//                    $binding_info['value'][$array_index] = FALSE;
-////                    $binding_info['value'][$array_index] = 0;
-//                }
-//            }
-//        }
-        return $bind_value;
+        return $binding_info['value'];
     }
+
 
     /**
      * creates an oci collection object out of the array and append the array items to that collection
@@ -161,6 +138,7 @@ trait bindvalue
      */
     protected function _create_collection($bind_info)
     {
+        //SQLT_NTY
         // Create an OCI-Collection object
         if(is_array($bind_info['type'])){
             $schema_and_type = $bind_info['type'];
