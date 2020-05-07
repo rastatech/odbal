@@ -89,7 +89,6 @@ trait bindtype
      */
     protected function _derive_bindVar_type($bind_valueArray)
     {
-//        echo "testing _derive_bindVar_type :" . var_export( $bind_valueArray, TRUE) . "<br/>\n";
         $arrObj = new ArrayObject($bind_valueArray);
         $arrIterator = $arrObj->getIterator();
         $valueMatches = [   'float'     => 0,
@@ -204,8 +203,6 @@ trait bindtype
         if((array_key_exists('type', $bind_info)) AND ($bind_info['type'])){
             $custom_type = $this->_check_4_customType($bind_info);
             if( ! $custom_type){
-//                $type =  $this->_getSQLTtype($bind_info['type'], $is_outvar);
-//                 echo "$type: <br/>\n";
                 return $this->_getSQLTtype($bind_info['type'], $is_outvar);
             }
             return $custom_type;

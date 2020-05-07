@@ -122,13 +122,14 @@ class bindings
      */
     protected function _bindVars2SQL($stmt, $sqlType)
     {
-//        die(var_export($this->vars2bind, TRUE));
         if ( ! $stmt) {
             throw new Exception('no statement found to bind on!', 517);
         }
         if ($this->vars2bind) {
             $b = ($sqlType < 2) ? $this->_bind_pkg($stmt) : $this->bind_passThruSQL($stmt); //not currently supported but leaving it open....
             $this->bound_vars = $b;
+            $msg =  "In Bindings; all variables bound.";
+            $this->ci->logger->debug($msg);
             return $b;
         }
     }
@@ -158,6 +159,8 @@ class bindings
 //            //dynamically add a public class attribute by which to access the bound var:
             $this->$bind_varname = ((is_array($bind_value)) AND (array_key_exists('value', $bind_value))) ? $bind_value['value'] : $bind_value;
             $b[$bind_varname] = $this->_bind_package_parameter($stmt, $bind_varname, $bind_value);
+            $msg =  "In Bindings @ line " . __LINE__ .  "; bound $bind_varname;";
+            $this->ci->logger->debug($msg);
         }
         return $b;
     }
@@ -226,32 +229,35 @@ class bindings
      */
     protected function _bind_package_parameter($stmt, $bind_varname, $bind_value)
     {
-//         echo "$bind_varname processing: <br/>\n";
+        $msg =  "In Bindings @ line " . __LINE__ .  "; about to bind $bind_varname: ";
         $var_bind_placeholder = ":$bind_varname";
         if(is_array($bind_value)){//treat arrayed values differently
             $is_outvar = $this->_is_outVar($bind_varname);
             if($is_outvar){//treat OUT variables differently especially as they must be compound values
                 $binding_info = $this->_process_outvar($bind_value);
-//                echo "outvar $bind_varname :" . var_export( $binding_info, TRUE) . "<br/>\n";
+                $msg .=  " is OUT var; type is " . var_export($binding_info['type'], TRUE);
                 $this->$bind_varname = $binding_info['value']; //this allows direct access to the OUT variable as a class variable
-                //only need set length & type for OUT params:
-//                echo "testing compound bind_varname :" . var_export( $binding_info, TRUE) . "<br/>\n";
+                $this->ci->logger->debug($msg, $binding_info);
+                //need set length & type for OUT params:
                 return $this->_bind_value($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
             }
             if($this->_is_compoundVar($bind_value)){//treat compound IN values differently
                 $binding_info = $this->_process_compound_array($bind_value, FALSE);
-//                echo "compound in var $bind_varname :" . var_export( $binding_info, TRUE) . "<br/>\n";
+                $msg .=  " is compound var; type is " . var_export($binding_info['type'], TRUE);
                 $this->$bind_varname = $binding_info['value']; //assigned to class variable out of convenience
+                $this->ci->logger->debug($msg, $binding_info);
                 return $this->_bind_value($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
             }
             $binding_info['value'] = $this->$bind_varname = $this->_handle_array_value(['length' => NULL, 'type' => NULL, 'value' => $bind_value]);  //assigned to class variable out of convenience
             $binding_info['type'] = $this->_determine_SQLT_type($binding_info, FALSE); //get type
             $binding_info['length'] = $this->_determine_length($binding_info, FALSE );//get length
-//             echo "processing non outvar non compound array $bind_varname: " . var_export($binding_info, TRUE) . "<br/>\n";
+            $msg .=  " is array var; type is " . var_export($binding_info['type'], TRUE);
+            $this->ci->logger->debug($msg, $binding_info);
             return $this->_bind_value($stmt, $bind_varname, $var_bind_placeholder, $binding_info);
         }
         $this->$bind_varname = $bind_value;
-//         echo "processing scalar $bind_varname: $bind_value <br/>\n";
+        $msg .=  " is scalar; type will be auto-detected; ";
+        $this->ci->logger->debug($msg, ['value' => $bind_value]);
         return $this->_bind_scalar_value($stmt, $bind_varname, $var_bind_placeholder);
     }
 
@@ -272,7 +278,6 @@ class bindings
             $boundVar = oci_bind_by_name($stmt, $var_bind_placeholder, $this->$bind_varname); //let oracle decide length and type for normal IN parameters
         }
         else{
-//             echo "binding $var_bind_placeholder: <br/>\n";
             $boundVar = oci_bind_by_name($stmt, $var_bind_placeholder, $this->$bind_varname, $bind_length, $bind_type);//typically OUT parameters need type &/or length defined
         }
         if ($o_err = oci_error($stmt)) {
@@ -293,16 +298,15 @@ class bindings
      */
     protected function _bind_arrayed_value($stmt, $bind_varname, $var_bind_placeholder, $bind_info)
     {
-//        echo "testing $bind_varname :" . var_export( $bind_info, TRUE) . "<br/>\n";
         //check this vs the docu
         $t_length = $bind_info['length']['max_table_length'];
         $i_length = $bind_info['length']['max_item_length'];
         $type = $bind_info['type'];
         $boundVar = oci_bind_array_by_name($stmt, $var_bind_placeholder, $this->$bind_varname, $t_length, $i_length, $type);
+//        $boundVar = oci_bind_array_by_name($stmt, $var_bind_placeholder, $this->$bind_varname, $t_length, $i_length );
         if ($o_err = oci_error($stmt)) {
             $this->_throwBindingError($o_err, $bind_info, 'Oracle bind by name failed!', 523);
         }
-//         echo "$boundVar processed....: <br/>\n";
         return $boundVar;
     }
 
@@ -324,7 +328,7 @@ class bindings
         if(is_array($bind_info['value'])){//treat arrayed values differently
             $custom_type = $this->_check_4_customType($bind_info); //should support custom declared types in the form of schema.type
             if(is_array($custom_type)){
-//                die($bind_varname . ", " . var_export($custom_type, TRUE));
+                $this->ci->logger->debug(" is custom type; creating collection...", $bind_info);
                 $collection = $this->_create_collection($bind_info);
                 $this->$bind_varname = $collection;
                 return $this->_bind_collection($stmt,$bind_varname,  $var_bind_placeholder);
@@ -353,8 +357,7 @@ class bindings
      */
     protected function _bind_collection($stmt, $bind_varname, $var_bind_placeholder)
     {
-        // Bind the collection to the parameter
-//        $boundvar = oci_bind_by_name($stmt,$var_bind_placeholder, $this->$bind_varname,-1,constant(OCI_B_SQLT_NTY));
+        // Bind the collection to the parameter:
         $boundvar = oci_bind_by_name($stmt,$var_bind_placeholder, $this->$bind_varname,-1,SQLT_NTY);
         if ($o_err = oci_error($stmt)) {
             $this->_throwBindingError($o_err, $bind_varname, 'Oracle bind collection failed!', 525);

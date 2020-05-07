@@ -133,12 +133,13 @@ trait bindvalue
     /**
      * creates an oci collection object out of the array and append the array items to that collection
      *
+     * oci8 type for collections for binding must always be SQLT_NTY
+     *
      * @param array $bind_info the array of bind info; (length, type, value)
-     * @return false|OCI_Collection
+     * @return OCI_Collection
      */
     protected function _create_collection($bind_info)
     {
-        //SQLT_NTY
         // Create an OCI-Collection object
         if(is_array($bind_info['type'])){
             $schema_and_type = $bind_info['type'];
@@ -147,9 +148,9 @@ trait bindvalue
         else{
             $collection = oci_new_collection($this->ci->conn,$bind_info['type']);
         }
-        foreach ($bind_info['value'] as $array_item){
+        foreach ($bind_info['value'] as $array_item){ //add the items to the collection
             $collection->append($array_item);
         }
-        return $collection; //re-assign the class attribute for retrieval; I *think* this will work....
+        return $collection;
     }
 }

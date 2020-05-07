@@ -146,11 +146,18 @@ class statement
     {
         if(( ! $outcursor_obj) OR (($outcursor_obj->out_cursor) AND ( ! is_array($outcursor_obj->out_cursor)))){
             $executeOn = ( ! $outcursor_obj) ? $this->stmt : $outcursor_obj->out_cursor;
+            $executing = ( ! $outcursor_obj) ? 'statement': 'cursor';
+             $msg = "In Statement @ line " . __LINE__ .  "; about to execute statement on $executing:";
+             $this->ci->logger->debug($msg);
             $success = $this->_safe_execute($executeOn);
         }
         elseif(is_array($outcursor_obj->out_cursor)){//handles an array of OUT CURSORs
+            $executing = ( ! $outcursor_obj) ? 'statement': 'cursor';
+            $msg =  "In Statement @ line " . __LINE__ .  "; about to execute statement on cursor array:";
+            $this->ci->logger->debug($msg);
             foreach($outcursor_obj->out_cursor as $outcursorname => $outcursor){
-//                 echo "executing $outcursorname: <br/>\n";
+                $msg =  "executing $outcursorname:";
+                $this->ci->logger->debug($msg);
                 $success[] = $this->_safe_execute($outcursor);
             }
         }
