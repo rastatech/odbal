@@ -278,6 +278,7 @@ class bindings
             $boundVar = oci_bind_by_name($stmt, $var_bind_placeholder, $this->$bind_varname); //let oracle decide length and type for normal IN parameters
         }
         else{
+            $bind_type = ($bind_type == SQLT_ODT) ? SQLT_CHR : $bind_type; //account for overzealous .ini file writers
             $boundVar = oci_bind_by_name($stmt, $var_bind_placeholder, $this->$bind_varname, $bind_length, $bind_type);//typically OUT parameters need type &/or length defined
         }
         if ($o_err = oci_error($stmt)) {
