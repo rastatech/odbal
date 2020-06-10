@@ -58,22 +58,22 @@ class cursor
             if( ! is_null($this->outcursorName)){
                 $bindCursor =  ':'. $this->outcursorName;
                 $success = oci_bind_by_name($stmt, $bindCursor, $this->out_cursor, -1, SQLT_RSET);
-                $msg = "In Cursor @ line " . __LINE__ .  "; non-array cursor bound: [$success ]";
+//                $msg = "In Cursor @ line " . __LINE__ .  "; non-array cursor bound: [$success ]";
             }
             $success = (isset($success)) ? $success : FALSE;
         }
         else{
-            $msg = "In Cursor @ line " . __LINE__ .  "; array of cursors binding: ";
+//            $msg = "In Cursor @ line " . __LINE__ .  "; binding array of: " . count($this->outcursorName) . " cursors: ";
             foreach($this->outcursorName as $outcursor_placeholder){
                 if( ! is_null($outcursor_placeholder)){
                     $success[$outcursor_placeholder] = oci_bind_by_name($stmt, ':'. $outcursor_placeholder, $this->out_cursor[$outcursor_placeholder], -1, SQLT_RSET);
-                    $msg .=  "array cursor $outcursor_placeholder bound: [ " . $success[$outcursor_placeholder] ." \n";
-                    $this->ci->logger->debug($msg);
+//                    $msg .=  "array cursor $outcursor_placeholder bound: [ " . $success[$outcursor_placeholder] . "];;; ";
                 }
             }
+//            $msg .= '; all cursors bound; ';
         }
-        $msg =  (isset($msg)) ? $msg : "cursor is null, no binding happening";
-        $this->ci->logger->debug($msg);
+//        $msg =  (isset($msg)) ? $msg : "cursor is null, no binding happening";
+//        $this->ci->logger->debug($msg, $this->outcursorName);
         if(( ! isset($success)) OR ( ! $success) OR ((is_array($success)) AND (in_array(FALSE, $success)))){
             $exception = oci_error($stmt);
             $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));
@@ -94,18 +94,18 @@ class cursor
     public function create_cursor($conn)
     {
         if( ! is_array($this->outcursorName)){// Create a new cursor resource
-            $msg =  "In Cursor @ line " . __LINE__ .  "; single cursor creation;";
+//            $msg =  "In Cursor @ line " . __LINE__ .  "; single cursor creation;";
             $this->out_cursor = oci_new_cursor($conn);
         }
         else{
-            $msg =  "in Cursor: array cursor creation; ";
+//            $msg =  "in Cursor: array cursor creation; ";
             foreach($this->outcursorName as $outcursor_placeholder){
                $cursorArray[$outcursor_placeholder] = oci_new_cursor($conn);
-               $msg .= "$outcursor_placeholder bound; ";
+//               $msg .= "$outcursor_placeholder created; ";
             }
             $this->out_cursor = $cursorArray;
         }
-        $this->ci->logger->debug($msg);
+//        $this->ci->logger->debug($msg);
         if(( ! $this->out_cursor) OR (empty($this->out_cursor))){
             $exception = oci_error($conn);
             $message = preg_replace('~[[:cntrl:]]~', '', htmlentities($exception['message']));

@@ -52,7 +52,6 @@ trait bindlength
     protected function _calculate_arrayedValue_length($bind_info)
     {
         $arrayed_value = $bind_info['value'];
-//       die(var_export($arrayed_value, TRUE));
         if($this->_check_4nulls($arrayed_value)){
             $max_length = 0;
             foreach ($arrayed_value as $array_item) {

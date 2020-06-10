@@ -224,6 +224,8 @@ class main
                 if(($this->outCursor)){ //uses dynamic __get()
 //                     echo "testing outcursor :" . var_export( $this->_outCursors , TRUE) . "<br/>\n";
                     $this->outcursorObj->create_cursor($this->conn);
+//                    $date = new \DateTime();
+//                    $this->ci->logger->debug('about to invoke bind cursor @ ' . $date->getTimestamp(), $this->outcursorObj->outcursorName);
                     return $this->outcursorObj->bind_cursor($this->stmt);
                 }
                 $return = NULL;

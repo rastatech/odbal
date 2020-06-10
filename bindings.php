@@ -299,6 +299,9 @@ class bindings
     protected function _bind_arrayed_value($stmt, $bind_varname, $var_bind_placeholder, $bind_info)
     {
         //check this vs the docu
+        if((array_key_exists('length', $bind_info)) AND ( ! is_array($bind_info['length']))){
+            $bind_info['length'] = $this->_calculate_arrayedValue_length($bind_info);
+        }
         $t_length = $bind_info['length']['max_table_length'];
         $i_length = $bind_info['length']['max_item_length'];
         $type = $bind_info['type'];
